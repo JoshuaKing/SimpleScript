@@ -1,4 +1,6 @@
 /* Simple Script */
+package x.y.z
+
 import a.b.c
 
 class MyClass {

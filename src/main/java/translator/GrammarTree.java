@@ -19,7 +19,9 @@ import static translator.Token.Type.Float;
 import static translator.Token.Type.Integer;
 import static translator.Token.Type.KeywordFalse;
 import static translator.Token.Type.KeywordIf;
+import static translator.Token.Type.KeywordImport;
 import static translator.Token.Type.KeywordInt;
+import static translator.Token.Type.KeywordPackage;
 import static translator.Token.Type.KeywordTrue;
 import static translator.Token.Type.OpenParenthesis;
 import static translator.Token.Type.Semicolon;
@@ -40,7 +42,7 @@ public class GrammarTree {
         this.tokens = tokens;
         tree = new ArrayList<>();
         for (; index < this.tokens.size(); index++) {
-            handleToken();
+            if (handleToken()) index--;
         }
     }
 
@@ -50,9 +52,33 @@ public class GrammarTree {
 
     private boolean handleToken() {
         Type t = tokens.get(index).getType();
+        if (check(KeywordPackage)) return handlePackage();
+        if (check(KeywordImport)) return handleImport();
         if (check(KeywordIf)) return handleIf();
         if (check(KeywordInt)) return handleInt();
         return false;
+    }
+
+    private boolean handleImport() {
+        if (!check(Variable)) return false;
+        String name = tokens.get(index - 1).getText();
+        while (check(Dot)) {
+            if (!check(Variable)) return false;
+            name += '.' + tokens.get(index - 1).getText();
+        }
+        VariableTable.importPackage(name);
+        return true;
+    }
+
+    private boolean handlePackage() {
+        if (!check(Variable)) return false;
+        String name = tokens.get(index - 1).getText();
+        while (check(Dot)) {
+            if (!check(Variable)) return false;
+            name += '.' + tokens.get(index - 1).getText();
+        }
+        VariableTable.addPackage(name);
+        return true;
     }
 
     // 'int' Variable {';', Assignment }
@@ -138,7 +164,7 @@ public class GrammarTree {
         String name = tokens.get(index - 1).getText();
         while (check(Dot)) {
             if (!check(Variable)) return null;
-            name += tokens.get(index - 1).getText();
+            name += '.' + tokens.get(index - 1).getText();
         }
 
         Var var = VariableTable.get(name);

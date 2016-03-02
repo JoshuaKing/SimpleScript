@@ -16,6 +16,33 @@ public class VariableTable {
         variables.put(scope, table);
     }
 
+    public static void addPackage(String pkg) {
+        root();
+        String[] pkgs = pkg.split("\\.");
+        for (String p : pkgs) {
+            variables.putIfAbsent(scope, new HashMap<>());
+            deeper();
+        }
+    }
+
+    public static void importPackage(String pkg) {
+        String[] pkgs = pkg.split("\\.");
+        Map<String, Object> table = variables.get(0);
+        for (String p : pkgs) {
+            if (table.get(p) != null && table.get(p).getClass().equals(Map.class)) {
+                table = (Map<String, Object>) table.get(p);
+            } else {
+                System.err.println("Package " + pkg + " not available for import (not found).");
+                return;
+            }
+        }
+        variables.get(scope).putAll(table);
+    }
+
+    public static void root() {
+        scope = 0;
+    }
+
     public static void deeper() {
         scope++;
     }
@@ -25,6 +52,17 @@ public class VariableTable {
     }
 
     public static Var get(String variable) {
+        // When no path is given
+        if (!variable.contains(".")) {
+            for (int i = scope; i >= 0; i--) {
+                if (variables.get(i).get(variable) == null) continue;
+                if (variables.get(i).get(variable).getClass().equals(Var.class)) {
+                    return (Var) variables.get(i).get(variable);
+                }
+            }
+        }
+
+
         String[] parts = variable.split("\\.");
         int s = scope;
         Var var = null;
