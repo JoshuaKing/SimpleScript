@@ -57,7 +57,11 @@ public class VariableTable {
                 return;
             }
         }
-        instance.variables.putAll(findPackage);
+        for (Object obj : findPackage.values()) {
+            Var var = (Var) obj;
+            if (var.getAccess().equals(Var.Access.Public)) instance.addToScope(var);
+        }
+        //instance.variables.putAll(findPackage);
     }
 
     private static VariableTable getRoot() {

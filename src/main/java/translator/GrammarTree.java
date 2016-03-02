@@ -16,12 +16,12 @@ import static translator.Token.Type.BooleanOr;
 import static translator.Token.Type.CloseBrace;
 import static translator.Token.Type.CloseParenthesis;
 import static translator.Token.Type.Dot;
+import static translator.Token.Type.KeywordStatic;
 import static translator.Token.Type.TypeFloat;
 import static translator.Token.Type.TypeInteger;
 import static translator.Token.Type.KeywordClass;
 import static translator.Token.Type.KeywordFalse;
 import static translator.Token.Type.KeywordFloat;
-import static translator.Token.Type.KeywordIf;
 import static translator.Token.Type.KeywordImport;
 import static translator.Token.Type.KeywordInt;
 import static translator.Token.Type.KeywordPackage;
@@ -62,8 +62,6 @@ public class GrammarTree {
         if (check(KeywordPackage)) return handlePackage();
         if (check(KeywordImport)) return handleImport();
         if (check(KeywordClass)) return handleClass();
-        if (check(KeywordIf)) return handleIf();
-        if (check(KeywordInt)) return handleAssignment();
         return false;
     }
 
@@ -78,9 +76,13 @@ public class GrammarTree {
         return true;
     }
 
-    // { public, private, static } Assignment
+    // [{ public, private }] [static] Assignment
     private boolean handleClassAssignments() {
-        return (check(KeywordPrivate) || check(KeywordPublic)) && handleAssignment();
+        Var.Access access = Var.Access.Private;
+        if (check(KeywordPrivate)) access = Var.Access.Private;
+        else if (check(KeywordPublic)) access = Var.Access.Public;
+        boolean isStatic = check(KeywordStatic);
+        return handleAssignment(access, isStatic);
     }
 
     private boolean handleImport() {
@@ -105,20 +107,20 @@ public class GrammarTree {
         return true;
     }
 
-    private Var handleInt() {
+    private Var handleInt(Var.Access access, boolean isStatic) {
         if (!check(Variable)) return null;
-        return new Var(tokens.get(index - 1).getText(), 0, Var.VarType.Integer);
+        return new Var(access, isStatic, tokens.get(index - 1).getText(), 0, Var.VarType.Integer);
     }
 
     // { 'int', 'float', 'string' } Variable [ '=' { Float, String, Integer } ] ';'
-    private boolean handleAssignment() {
+    private boolean handleAssignment(Var.Access access, boolean isStatic) {
         Var var = null;
         if (check(KeywordInt)) {
-            if ((var = handleInt()) == null) return false;
+            if ((var = handleInt(access, isStatic)) == null) return false;
         } else if (check(KeywordFloat)) {
-            if ((var = handleInt()) == null) return false;
+            if ((var = handleInt(access, isStatic)) == null) return false;
         } else if (check(KeywordString)) {
-            if ((var = handleInt()) == null) return false;
+            if ((var = handleInt(access, isStatic)) == null) return false;
         } else {
             return false;
         }
@@ -130,9 +132,9 @@ public class GrammarTree {
         if (!check(ArithmeticEquals)) return false;
         if (var.varType.equals(Var.VarType.Integer) && check(TypeInteger)) {
             var.value = Integer.valueOf(tokens.get(index - 1).getText());
-        } else if (var.varType.equals(Var.VarType.Float) && !check(TypeFloat)) {
+        } else if (var.getVarType().equals(Var.VarType.Float) && !check(TypeFloat)) {
             return false;
-        } else if (var.varType.equals(Var.VarType.String)) {
+        } else if (var.getVarType().equals(Var.VarType.String)) {
             return false;
         } else {
             return false;

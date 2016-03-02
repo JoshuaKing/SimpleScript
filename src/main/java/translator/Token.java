@@ -29,6 +29,7 @@ public class Token {
         KeywordReturn("return"),
         KeywordPrivate("private"),
         KeywordPublic("public"),
+        KeywordStatic("static"),
         KeywordVoid("void"),
         KeywordInt("int"),
         KeywordBoolean("boolean"),
