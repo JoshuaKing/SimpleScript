@@ -12,8 +12,8 @@ import java.util.stream.Collectors;
 public class Tokenizer {
     public static List<String> tokenize(String file) {
         List<String> tokens = new ArrayList<>();
-        Pattern p = Pattern.compile("/[*]|[*]/|!=|[\"'.(){}\\[\\];></%!:^]|([|&*=+-])\\1?|\\s+");
-        Matcher m = p.matcher(file.replaceAll("//.*$", ""));
+        Pattern p = Pattern.compile("//.*|/[*]|[*]/|([\"'].*?)\\1|\\d+\\.\\d+|[.(){}\\[\\];></%!:^]|[+*/!-]=|([|&*=+-])\\1?|\\s+");
+        Matcher m = p.matcher(file.replaceAll("", ""));
         int from = 0;
         while (m.find()) {
             if (from != m.start()) tokens.add(file.substring(from, m.start()));

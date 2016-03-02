@@ -2,38 +2,10 @@ package translator;
 
 import translator.Token.Type;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-import static translator.Token.Type.ArithmeticEquals;
-import static translator.Token.Type.BooleanAnd;
-import static translator.Token.Type.BooleanEquals;
-import static translator.Token.Type.BooleanNot;
-import static translator.Token.Type.BooleanNotEquals;
-import static translator.Token.Type.BooleanOr;
-import static translator.Token.Type.CloseBrace;
-import static translator.Token.Type.CloseParenthesis;
-import static translator.Token.Type.Dot;
-import static translator.Token.Type.KeywordStatic;
-import static translator.Token.Type.TypeFloat;
-import static translator.Token.Type.TypeInteger;
-import static translator.Token.Type.KeywordClass;
-import static translator.Token.Type.KeywordFalse;
-import static translator.Token.Type.KeywordFloat;
-import static translator.Token.Type.KeywordImport;
-import static translator.Token.Type.KeywordInt;
-import static translator.Token.Type.KeywordPackage;
-import static translator.Token.Type.KeywordPrivate;
-import static translator.Token.Type.KeywordPublic;
-import static translator.Token.Type.KeywordString;
-import static translator.Token.Type.KeywordTrue;
-import static translator.Token.Type.OpenBrace;
-import static translator.Token.Type.OpenParenthesis;
-import static translator.Token.Type.Semicolon;
-import static translator.Token.Type.Variable;
-import static translator.Token.Type.WhiteSpace;
+import static translator.Token.Type.*;
+import static translator.Variable.VarType.fromTokenType;
 
 /**
  * Created by josking on 3/2/16.
@@ -65,86 +37,175 @@ public class GrammarTree {
         return false;
     }
 
-    // 'class' Variable '{' ClassAssignment* Methods* '}'
+    // 'class' Name '{' ClassStatements '}'
     private boolean handleClass() {
-        if (!check(Variable)) return false;
-        VariableTable.getInstance().addClass(tokens.get(index - 1).getText());
+        if (!check(Name)) return false;
+        VariableTable.getInstance().addScope(prev().getText());
         if (!check(OpenBrace)) return false;
-        handleClassAssignments();
-        //handleClassMethods();
+        if (!handleClassStatements()) return false;
         if (!check(CloseBrace)) return false;
         return true;
     }
 
+    private boolean handleClassStatements() {
+        int repeat = index;
+        if (!handleClassVariableDefinitions()) {
+            index = repeat;
+            if (!handleClassMethods()) return false;
+        } else {
+            if (!handleClassMethods()) return false;
+        }
+        return true;
+    }
+
+    // ReturnType Name '(' Arguments ')' '{' MethodStatements '}'
+    private boolean handleClassMethods() {
+        Type returnType = handleReturnType();
+        if (returnType == null) return false;
+        if (!check(Name)) return false;
+        String name = prev().getText();
+        if (!check(OpenParenthesis)) return false;
+        if (!check(CloseParenthesis)) {
+            List<Variable> args = handleArguments();
+            if (args == null) return false;
+            VariableTable.getInstance().addScope(name);
+            VariableTable.getInstance().addToScope(args);
+            VariableTable.getInstance().addMethod(new Method(fromTokenType(returnType), name, args));
+            if (!check(CloseParenthesis)) return false;
+        }
+        if (!check(OpenBrace)) return false;
+        if (!handleMethodStatements()) return false;
+        if (!check(CloseBrace)) return false;
+        return true;
+    }
+
+    // { KeyWordStatement, Command }+
+    private boolean handleMethodStatements() {
+        boolean ever = false;
+        while (handleKeywordStatement() || handleExpression()) ever = true;
+        return ever;
+    }
+
+    // Keyword '(' Expression ')' '{' Commands '}'
+    private boolean handleKeywordStatement() {
+        Token token = checkAny(KeywordIf, KeywordFor);
+        if (token == null) return false;
+        switch(token.getType()) {
+            case KeywordIf:
+                return handleIfStatement();
+            case KeywordFor:
+                //return handleFor;
+                break;
+            default:
+                break;
+        }
+        return false;
+    }
+
+    private Token prev() {
+        return tokens.get(index - 1);
+    }
+
+    // Type Name [, Type Name]*
+    private List<Variable> handleArguments() {
+        Type type = handleType();
+        if (type == null) return null;
+        if (!check(Name)) return null;
+        String name = prev().getText();
+        List<Variable> list = Arrays.asList(new Variable(Variable.Access.Argument, false, name, type));
+        if (check(Comma)) {
+            List<Variable> append = handleArguments();
+            if (append != null) list.addAll(append);
+            else return null;
+        }
+        return list;
+    }
+
+    private Type handleReturnType() {
+        if (checkOr(KeywordInt, KeywordFloat, KeywordBoolean, KeywordString, KeywordVoid)) return prev().getType();
+        return null;
+    }
+
+    private Type handleType() {
+        if (checkOr(KeywordInt, KeywordFloat, KeywordBoolean, KeywordString)) return prev().getType();
+        return null;
+    }
+
     // [{ public, private }] [static] Assignment
-    private boolean handleClassAssignments() {
-        Var.Access access = Var.Access.Private;
-        if (check(KeywordPrivate)) access = Var.Access.Private;
-        else if (check(KeywordPublic)) access = Var.Access.Public;
+    private boolean handleClassVariableDefinitions() {
+        Variable.Access access = Variable.Access.Private;
+        if (check(KeywordPrivate)) access = Variable.Access.Private;
+        else if (check(KeywordPublic)) access = Variable.Access.Public;
         boolean isStatic = check(KeywordStatic);
-        return handleAssignment(access, isStatic);
+        return handleVariableDefine(access, isStatic);
     }
 
     private boolean handleImport() {
-        if (!check(Variable)) return false;
-        String name = tokens.get(index - 1).getText();
+        if (!check(Name)) return false;
+        String name = prev().getText();
         while (check(Dot)) {
-            if (!check(Variable)) return false;
-            name += '.' + tokens.get(index - 1).getText();
+            if (!check(Name)) return false;
+            name += '.' + prev().getText();
         }
         VariableTable.getInstance().importPackage(name);
         return true;
     }
 
     private boolean handlePackage() {
-        if (!check(Variable)) return false;
-        String name = tokens.get(index - 1).getText();
+        if (!check(Name)) return false;
+        String name = prev().getText();
         while (check(Dot)) {
-            if (!check(Variable)) return false;
-            name += '.' + tokens.get(index - 1).getText();
+            if (!check(Name)) return false;
+            name += '.' + prev().getText();
         }
         VariableTable.addPackage(name);
         return true;
     }
 
-    private Var handleInt(Var.Access access, boolean isStatic) {
-        if (!check(Variable)) return null;
-        return new Var(access, isStatic, tokens.get(index - 1).getText(), 0, Var.VarType.Integer);
+    private Variable handleInt(Variable.Access access, boolean isStatic) {
+        if (!check(Name)) return null;
+        return new Variable(access, isStatic, prev().getText(), 0, Variable.VarType.Integer);
     }
 
-    // { 'int', 'float', 'string' } Variable [ '=' { Float, String, Integer } ] ';'
-    private boolean handleAssignment(Var.Access access, boolean isStatic) {
-        Var var = null;
+    // {'=', '+=', '-=', '*=', '/=', '**', '&', '|', '~', '^'} { Expression } | {'++','--'}
+    private boolean handleAssignment(Variable variable) {
+        if (!check(OperatorEquals)) return false;
+        if (checkOr(ConstInteger, ConstFloat)) {
+            variable.setValue(prev().getText());
+        } else if (variable.getVarType().equals(Variable.VarType.String)) {
+            variable.setValue(prev().getText());
+        } else if (variable.getVarType().equals(Variable.VarType.Boolean)) {
+            variable.setValue(prev().getText());
+        } else {
+            return false;
+        }
+        return true;
+    }
+
+    // { 'int', 'float', 'string' } Name Assignment ';'
+    private boolean handleVariableDefine(Variable.Access access, boolean isStatic) {
+        Variable variable = null;
         if (check(KeywordInt)) {
-            if ((var = handleInt(access, isStatic)) == null) return false;
+            if ((variable = handleInt(access, isStatic)) == null) return false;
         } else if (check(KeywordFloat)) {
-            if ((var = handleInt(access, isStatic)) == null) return false;
+            if ((variable = handleInt(access, isStatic)) == null) return false;
         } else if (check(KeywordString)) {
-            if ((var = handleInt(access, isStatic)) == null) return false;
+            if ((variable = handleInt(access, isStatic)) == null) return false;
         } else {
             return false;
         }
 
         if (check(Semicolon)) {
-            VariableTable.getInstance().addToScope(var);
+            VariableTable.getInstance().addToScope(variable);
             return true;
         }
-        if (!check(ArithmeticEquals)) return false;
-        if (var.varType.equals(Var.VarType.Integer) && check(TypeInteger)) {
-            var.value = Integer.valueOf(tokens.get(index - 1).getText());
-        } else if (var.getVarType().equals(Var.VarType.Float) && !check(TypeFloat)) {
-            return false;
-        } else if (var.getVarType().equals(Var.VarType.String)) {
-            return false;
-        } else {
-            return false;
-        }
-        VariableTable.getInstance().addToScope(var);
+        if (!handleAssignment(variable)) return false;
+        VariableTable.getInstance().addToScope(variable);
         return check(Semicolon);
     }
 
     // 'if' '(' Expression ')' { Statement , '{' Statements '}' }
-    private boolean handleIf() {
+    private boolean handleIfStatement() {
         if (!check(OpenParenthesis)) return false;
         if (!handleExpression()) return false;
         if (!check(CloseParenthesis)) return false;
@@ -152,13 +213,37 @@ public class GrammarTree {
     }
 
     private boolean check(Type expected) {
-        while (tokens.get(index).getType().equals(WhiteSpace)) index++;
+        while (tokens.get(index).getType().equals(WhiteSpace) || tokens.get(index).getType().equals(LineComment)) index++;
         if (tokens.get(index).getType().equals(expected)) {
             tree.add(tokens.get(index));
             index++;
             return true;
         }
         return false;
+    }
+
+    private boolean checkOr(Type... expected) {
+        while (tokens.get(index).getType().equals(WhiteSpace) || tokens.get(index).getType().equals(LineComment)) index++;
+        for (Type exp : expected) {
+            if (tokens.get(index).getType().equals(exp)) {
+                tree.add(tokens.get(index));
+                index++;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private Token checkAny(Type... expected) {
+        while (tokens.get(index).getType().equals(WhiteSpace) || tokens.get(index).getType().equals(LineComment)) index++;
+        for (Type exp : expected) {
+            if (tokens.get(index).getType().equals(exp)) {
+                tree.add(tokens.get(index));
+                index++;
+                return prev();
+            }
+        }
+        return null;
     }
 
     // { '(' Expression ')', Statement [Comparator Statement]* }
@@ -175,42 +260,94 @@ public class GrammarTree {
 
     // { '&&', '||', '==', '!=' }
     private boolean handleComparator() {
-        return (check(BooleanAnd) || check(BooleanOr) || check(BooleanEquals) || check(BooleanNotEquals));
+        return checkOr(BooleanAnd, BooleanOr, BooleanEquals, BooleanNotEquals);
     }
 
-    // { '!' Value, '(' Statement ')', Value }
+    //  FunctionCall | InstanceCreation | Constant | Variable | Variable SoloOperator | [!] Variable { DualOperator, Comparator} Statement
     private boolean handleStatement() {
-        if (check(BooleanNot)) return handleValue();
-        if (check(OpenParenthesis)) {
-            if (!handleStatement()) return false;
-            check(CloseParenthesis);
-        }
-        return handleValue();
-    }
-    
-    // { Eval, Number, 'true', 'false' }
-    private boolean handleValue() {
-        return (check(KeywordTrue) || check(KeywordFalse) || check(TypeFloat) || check(TypeInteger) || handleVariable() != null);
+        if (handleMethodCall()) return true;
+        //if (handleInstanceCreation()) return true;
+        if (handleConstant() != null) return true;
+        if (handleVariable() != null) return true;
+        if (handleSoloOperator()) return true;
+        check(BooleanNot);
+        if (!handleDualOperator() && !handleComparator()) return false;
+        return handleStatement();
     }
 
-    // Variable [ '.' Variable ]*
-    private Var handleVariable() {
-        if (!check(Variable)) return null;
-        String name = tokens.get(index - 1).getText();
+    // { Name '.'}* Name '(' Parameters ')'
+    private boolean handleMethodCall() {
+        if (!check(Name)) return false;
+        String name = prev().getText();
         while (check(Dot)) {
-            if (!check(Variable)) return null;
-            name += '.' + tokens.get(index - 1).getText();
+            if (!check(Name)) return false;
+            name += '.' + prev().getText();
+        }
+        if (!check(OpenParenthesis)) return false;
+        Method method = VariableTable.getInstance().getMethod(name);
+        if (method == null) return false;
+        System.out.println("Method call to " + method.getName());
+        if (!handleParameters(method.arguments)) return false;
+        return true;
+    }
+
+    private boolean handleParameters(List<Variable> parameters) {
+        for (Variable v : parameters) {
+            Token constants = handleConstant();
+            Variable.VarType type = null;
+            String name = "";
+            if (constants != null) {
+                name = constants.getText();
+                type = fromTokenType(constants.getType());
+            } else {
+                Variable var = handleVariable();
+                if (var == null) return false;
+                name = var.getName();
+                type = var.getType();
+            }
+            if (!v.getType().equals(type)) {
+                System.err.println("Constant '" + name + "' of type '" + type.name() + "' does not match Argument '" + v.getName() + "' of type '" + v.getType().name() + "'");
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // '++', '--'
+    private boolean handleSoloOperator() {
+        return checkOr(OperatorDecrement, OperatorIncrement);
+    }
+
+    // '-=', '+=', '/=', '*=', '%=', '-', '+', '/', '*', '%', '**', '&', '~', '|', '^', '='
+    private boolean handleDualOperator() {
+        return checkOr(OperatorDecrementBy, OperatorIncrementBy, OperatorDivideBy, OperatorMultiplyBy, OperatorModuloBy,
+                        OperatorMinus, OperatorPlus, OperatorDivide, OperatorMultiply, OperatorModulo, OperatorPower,
+                        BitwiseAnd, BitwiseNot, BitwiseOr, BitwiseXor, OperatorEquals);
+    }
+
+    // { integer, float, 'true', 'false', ".*", '.*'}
+    private Token handleConstant() {
+        return checkAny(KeywordTrue, KeywordFalse, ConstFloat, ConstInteger, ConstString);
+    }
+
+    // Name [ '.' Name ]*
+    private Variable handleVariable() {
+        if (!check(Name)) return null;
+        String name = prev().getText();
+        while (check(Dot)) {
+            if (!check(Name)) return null;
+            name += '.' + prev().getText();
         }
 
-        Var var = VariableTable.getInstance().get(name);
-        if (var == null) {
+        Variable variable = VariableTable.getInstance().get(name);
+        if (variable == null) {
             System.err.println(name + " does not exist. ");
             return null;
         } else {
-            System.out.println(name + " is currently " + var.getValue());
+            System.out.println(name + " is currently " + variable.getValue());
         }
 
-        return var;
+        return variable;
     }
 
 

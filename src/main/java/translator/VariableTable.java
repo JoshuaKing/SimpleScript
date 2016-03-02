@@ -1,12 +1,14 @@
 package translator;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
  * Created by josking on 3/2/16.
  */
 public class VariableTable {
+    public static final String METHOD_KEY = "_Method";
     private static VariableTable root = new VariableTable(null, "");
 
     private static VariableTable instance = root;
@@ -19,7 +21,7 @@ public class VariableTable {
         this.parentKey = parentKey;
     }
 
-    public void addToScope(Var variable) {
+    public void addToScope(Variable variable) {
         variables.put(variable.getName(), variable);
         VariableTable inst = instance;
         System.out.println("Adding " + variable.getName() + " to...");
@@ -40,9 +42,9 @@ public class VariableTable {
         return instance;
     }
 
-    public VariableTable addClass(String cls) {
-        variables.putIfAbsent(cls, new VariableTable(this, cls));
-        instance = (VariableTable) variables.get(cls);
+    public VariableTable addScope(String scope) {
+        variables.putIfAbsent(scope, new VariableTable(this, scope));
+        instance = (VariableTable) variables.get(scope);
         return instance;
     }
 
@@ -58,10 +60,9 @@ public class VariableTable {
             }
         }
         for (Object obj : findPackage.values()) {
-            Var var = (Var) obj;
-            if (var.getAccess().equals(Var.Access.Public)) instance.addToScope(var);
+            Variable variable = (Variable) obj;
+            if (variable.getAccess().equals(Variable.Access.Public)) instance.addToScope(variable);
         }
-        //instance.variables.putAll(findPackage);
     }
 
     private static VariableTable getRoot() {
@@ -72,13 +73,13 @@ public class VariableTable {
         return instance;
     }
 
-    public Var get(String variable) {
+    public Variable get(String variable) {
         // Bottom Up with no path
         if (!variable.contains(".")) {
             VariableTable instance = this;
             while (instance != null) {
                 Object var = instance.variables.get(variable);
-                if (var != null && var.getClass().equals(Var.class)) return (Var) var;
+                if (var != null && var.getClass().equals(Variable.class)) return (Variable) var;
                 instance = instance.getParent();
             }
         }
@@ -88,8 +89,8 @@ public class VariableTable {
         for (String part : variable.split("\\.")) {
             Object obj = instance.variables.get(part);
             if (obj != null) {
-                if (obj.getClass().equals(Var.class)) {
-                    return (Var) obj;
+                if (obj.getClass().equals(Variable.class)) {
+                    return (Variable) obj;
                 } else {
                     instance = (VariableTable) obj;
                 }
@@ -98,7 +99,48 @@ public class VariableTable {
         return null;
     }
 
+    public Method getMethod(String method) {
+        // Bottom Up w/Path
+        VariableTable instance = this.getParent();
+        Object obj = null;
+        String methodId = method + '.' + METHOD_KEY;
+        for (String part : methodId.split("\\.")) {
+            while (obj == null) {
+                obj = instance.variables.get(part);
+                if (obj != null) break;
+                instance = instance.getParent();
+                if (instance == null) {
+                    System.err.println("No such method " + method);
+                    return null;
+                }
+            }
+            obj = instance.variables.get(part);
+            if (obj.getClass().equals(Method.class)) {
+                return (Method) obj;
+            } else {
+                instance = (VariableTable) obj;
+            }
+        }
+        return null;
+    }
+
     public VariableTable getParent() {
         return parent;
+    }
+
+    public void addToScope(List<Variable> vars) {
+        for (Variable v : vars) {
+            addToScope(v);
+        }
+    }
+
+    public void addMethod(Method method) {
+        variables.put(METHOD_KEY, method);
+        VariableTable inst = instance;
+        System.out.println("Adding " + METHOD_KEY + " to...");
+        while (inst != null) {
+            System.out.println("-> " + inst.parentKey);
+            inst = inst.getParent();
+        }
     }
 }
