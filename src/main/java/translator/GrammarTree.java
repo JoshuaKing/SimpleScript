@@ -13,16 +13,23 @@ import static translator.Token.Type.BooleanEquals;
 import static translator.Token.Type.BooleanNot;
 import static translator.Token.Type.BooleanNotEquals;
 import static translator.Token.Type.BooleanOr;
+import static translator.Token.Type.CloseBrace;
 import static translator.Token.Type.CloseParenthesis;
 import static translator.Token.Type.Dot;
-import static translator.Token.Type.Float;
-import static translator.Token.Type.Integer;
+import static translator.Token.Type.TypeFloat;
+import static translator.Token.Type.TypeInteger;
+import static translator.Token.Type.KeywordClass;
 import static translator.Token.Type.KeywordFalse;
+import static translator.Token.Type.KeywordFloat;
 import static translator.Token.Type.KeywordIf;
 import static translator.Token.Type.KeywordImport;
 import static translator.Token.Type.KeywordInt;
 import static translator.Token.Type.KeywordPackage;
+import static translator.Token.Type.KeywordPrivate;
+import static translator.Token.Type.KeywordPublic;
+import static translator.Token.Type.KeywordString;
 import static translator.Token.Type.KeywordTrue;
+import static translator.Token.Type.OpenBrace;
 import static translator.Token.Type.OpenParenthesis;
 import static translator.Token.Type.Semicolon;
 import static translator.Token.Type.Variable;
@@ -41,8 +48,8 @@ public class GrammarTree {
     public GrammarTree (List<Token> tokens) {
         this.tokens = tokens;
         tree = new ArrayList<>();
-        for (; index < this.tokens.size(); index++) {
-            if (handleToken()) index--;
+        for (; index < this.tokens.size();) {
+            if (!handleToken()) index++;
         }
     }
 
@@ -54,9 +61,26 @@ public class GrammarTree {
         Type t = tokens.get(index).getType();
         if (check(KeywordPackage)) return handlePackage();
         if (check(KeywordImport)) return handleImport();
+        if (check(KeywordClass)) return handleClass();
         if (check(KeywordIf)) return handleIf();
-        if (check(KeywordInt)) return handleInt();
+        if (check(KeywordInt)) return handleAssignment();
         return false;
+    }
+
+    // 'class' Variable '{' ClassAssignment* Methods* '}'
+    private boolean handleClass() {
+        if (!check(Variable)) return false;
+        VariableTable.getInstance().addClass(tokens.get(index - 1).getText());
+        if (!check(OpenBrace)) return false;
+        handleClassAssignments();
+        //handleClassMethods();
+        if (!check(CloseBrace)) return false;
+        return true;
+    }
+
+    // { public, private, static } Assignment
+    private boolean handleClassAssignments() {
+        return (check(KeywordPrivate) || check(KeywordPublic)) && handleAssignment();
     }
 
     private boolean handleImport() {
@@ -66,7 +90,7 @@ public class GrammarTree {
             if (!check(Variable)) return false;
             name += '.' + tokens.get(index - 1).getText();
         }
-        VariableTable.importPackage(name);
+        VariableTable.getInstance().importPackage(name);
         return true;
     }
 
@@ -81,35 +105,44 @@ public class GrammarTree {
         return true;
     }
 
-    // 'int' Variable {';', Assignment }
-    private boolean handleInt() {
-        index++;
-
-        if (!check(Variable)) return false;
-        String var = tokens.get(index - 1).getText();
-        VariableTable.addToScope(new Var(var, 0, Var.VarType.Integer));
-        return check(Semicolon) || handleAssignment(VariableTable.get(var));
+    private Var handleInt() {
+        if (!check(Variable)) return null;
+        return new Var(tokens.get(index - 1).getText(), 0, Var.VarType.Integer);
     }
 
-    // '=' { Float, String, Integer } ';'
-    private boolean handleAssignment(Var var) {
-        if (check(ArithmeticEquals)) return false;
-        if (var.equals(Var.VarType.Integer) && !check(Integer)) {
-            var.value = Integer.valueOf(tokens.get(index - 1).getText());
-            return false;
-        } else if (var.equals(Var.VarType.Float) && !check(Float)) {
-            return false;
-        } else if (var.equals(Var.VarType.String)) {
-            // return handleString();
+    // { 'int', 'float', 'string' } Variable [ '=' { Float, String, Integer } ] ';'
+    private boolean handleAssignment() {
+        Var var = null;
+        if (check(KeywordInt)) {
+            if ((var = handleInt()) == null) return false;
+        } else if (check(KeywordFloat)) {
+            if ((var = handleInt()) == null) return false;
+        } else if (check(KeywordString)) {
+            if ((var = handleInt()) == null) return false;
         } else {
             return false;
         }
+
+        if (check(Semicolon)) {
+            VariableTable.getInstance().addToScope(var);
+            return true;
+        }
+        if (!check(ArithmeticEquals)) return false;
+        if (var.varType.equals(Var.VarType.Integer) && check(TypeInteger)) {
+            var.value = Integer.valueOf(tokens.get(index - 1).getText());
+        } else if (var.varType.equals(Var.VarType.Float) && !check(TypeFloat)) {
+            return false;
+        } else if (var.varType.equals(Var.VarType.String)) {
+            return false;
+        } else {
+            return false;
+        }
+        VariableTable.getInstance().addToScope(var);
         return check(Semicolon);
     }
 
     // 'if' '(' Expression ')' { Statement , '{' Statements '}' }
     private boolean handleIf() {
-        index++;
         if (!check(OpenParenthesis)) return false;
         if (!handleExpression()) return false;
         if (!check(CloseParenthesis)) return false;
@@ -155,7 +188,7 @@ public class GrammarTree {
     
     // { Eval, Number, 'true', 'false' }
     private boolean handleValue() {
-        return (check(KeywordTrue) || check(KeywordFalse) || check(Float) || check(Integer) || handleVariable() != null);
+        return (check(KeywordTrue) || check(KeywordFalse) || check(TypeFloat) || check(TypeInteger) || handleVariable() != null);
     }
 
     // Variable [ '.' Variable ]*
@@ -167,10 +200,12 @@ public class GrammarTree {
             name += '.' + tokens.get(index - 1).getText();
         }
 
-        Var var = VariableTable.get(name);
+        Var var = VariableTable.getInstance().get(name);
         if (var == null) {
             System.err.println(name + " does not exist. ");
             return null;
+        } else {
+            System.out.println(name + " is currently " + var.getValue());
         }
 
         return var;
