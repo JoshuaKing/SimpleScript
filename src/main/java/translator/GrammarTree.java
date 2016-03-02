@@ -184,16 +184,10 @@ public class GrammarTree {
 
     // { 'int', 'float', 'string' } Name Assignment ';'
     private boolean handleVariableDefine(Variable.Access access, boolean isStatic) {
-        Variable variable = null;
-        if (check(KeywordInt)) {
-            if ((variable = handleInt(access, isStatic)) == null) return false;
-        } else if (check(KeywordFloat)) {
-            if ((variable = handleInt(access, isStatic)) == null) return false;
-        } else if (check(KeywordString)) {
-            if ((variable = handleInt(access, isStatic)) == null) return false;
-        } else {
-            return false;
-        }
+        Token token = checkAny(KeywordInt, KeywordBoolean, KeywordFloat, KeywordString);
+        if (token == null) return false;
+        if (!check(Name)) return false;
+        Variable variable = new Variable(access, isStatic, prev().getText(), token.getType());
 
         if (check(Semicolon)) {
             VariableTable.getInstance().addToScope(variable);
@@ -292,6 +286,7 @@ public class GrammarTree {
     }
 
     private boolean handleParameters(List<Variable> parameters) {
+        int i = 0;
         for (Variable v : parameters) {
             Token constants = handleConstant();
             Variable.VarType type = null;
@@ -306,9 +301,10 @@ public class GrammarTree {
                 type = var.getType();
             }
             if (!v.getType().equals(type)) {
-                System.err.println("Constant '" + name + "' of type '" + type.name() + "' does not match Argument '" + v.getName() + "' of type '" + v.getType().name() + "'");
+                System.err.println("Parameter #" + i + " with value '" + name + "' of type '" + type.name() + "' does not match Argument '" + v.getName() + "' of type '" + v.getType().name() + "'");
                 return false;
             }
+            i++;
         }
         return true;
     }
