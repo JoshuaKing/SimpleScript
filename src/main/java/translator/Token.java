@@ -25,6 +25,7 @@ public class Token {
         KeywordClass("class"),
         KeywordFor("for"),
         KeywordImport("import"),
+        KeywordReturn("return"),
         KeywordInt("int"),
         KeywordBoolean("boolean"),
         BooleanEquals("=="),
