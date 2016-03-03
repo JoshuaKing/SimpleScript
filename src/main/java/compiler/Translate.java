@@ -1,6 +1,9 @@
 package compiler;
 
+import Grammar.GrammarFile;
+import Grammar.GrammarRule;
 import classes.Token;
+import handler.TokenIterator;
 import org.apache.commons.io.IOUtils;
 
 import java.io.FileReader;
@@ -18,9 +21,14 @@ public class Translate {
         for (Token t : tokens) {
             System.out.println(t.getType().name() + " : " + t.getText());
         }
-        Parser tree = new Parser(tokens);
+        /*Parser tree = new Parser(tokens);
         for (Token t : tree.getTree()) {
             System.out.println(t.getType().name() + " = " + t.getText());
-        }
+        }*/
+
+        GrammarRule file = new GrammarFile();
+        file.setTokens(new TokenIterator(tokens));
+        file.parseGrammar();
+        System.out.println("Grammar =\n" + file.toString());
     }
 }
