@@ -5,7 +5,7 @@ import a.b.c
 
 class MyClass {
     private int a = 2; // Test Comment 1
-    private boolean y = true;
+    private int y = 3;
     // Test Comment 2
 
     void x(int b) {

@@ -4,6 +4,9 @@ import translator.Token;
 
 import java.util.List;
 
+import static translator.Token.Type.LineComment;
+import static translator.Token.Type.WhiteSpace;
+
 /**
  * Created by josking on 3/3/16.
  */
@@ -39,8 +42,27 @@ public class TokenIterator {
         return tok().getType();
     }
 
-    public boolean isType(Token.Type type) {
-        return getType().equals(type);
+    public boolean check(Token.Type type) {
+        while (getType().equals(WhiteSpace) || getType().equals(LineComment)) increment();
+        if (getType().equals(type)) {
+            increment();
+            return true;
+        }
+        return false;
+    }
+
+    public boolean checkOr(Token.Type... types) {
+        for (Token.Type type : types) {
+            if (check(type)) return true;
+        }
+        return false;
+    }
+
+    public Token checkAny(Token.Type... types) {
+        for (Token.Type type : types) {
+            if (check(type)) return prev();
+        }
+        return null;
     }
 
     public void increment() {

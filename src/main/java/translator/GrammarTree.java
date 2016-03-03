@@ -40,7 +40,6 @@ import static translator.Token.Type.KeywordStatic;
 import static translator.Token.Type.KeywordString;
 import static translator.Token.Type.KeywordTrue;
 import static translator.Token.Type.KeywordVoid;
-import static translator.Token.Type.LineComment;
 import static translator.Token.Type.Name;
 import static translator.Token.Type.OpenBrace;
 import static translator.Token.Type.OpenParenthesis;
@@ -59,7 +58,6 @@ import static translator.Token.Type.OperatorMultiplyBy;
 import static translator.Token.Type.OperatorPlus;
 import static translator.Token.Type.OperatorPower;
 import static translator.Token.Type.Semicolon;
-import static translator.Token.Type.WhiteSpace;
 import static translator.Variable.VarType.fromTokenType;
 
 /**
@@ -235,37 +233,15 @@ public class GrammarTree {
     }
 
     private boolean check(Type expected) {
-        while (tokens.isType(WhiteSpace) || tokens.isType(LineComment)) tokens.increment();
-        if (tokens.isType(expected)) {
-            tree.add(tokens.tok());
-            tokens.increment();
-            return true;
-        }
-        return false;
+        return tokens.check(expected);
     }
 
     private boolean checkOr(Type... expected) {
-        while (tokens.isType(WhiteSpace) || tokens.isType(LineComment)) tokens.increment();
-        for (Type exp : expected) {
-            if (tokens.isType(exp)) {
-                tree.add(tokens.tok());
-                tokens.increment();
-                return true;
-            }
-        }
-        return false;
+        return tokens.checkOr(expected);
     }
 
     private Token checkAny(Type... expected) {
-        while (tokens.isType(WhiteSpace) || tokens.isType(LineComment)) tokens.increment();
-        for (Type exp : expected) {
-            if (tokens.isType(exp)) {
-                tree.add(tokens.tok());
-                tokens.increment();
-                return tokens.prev();
-            }
-        }
-        return null;
+        return tokens.checkAny(expected);
     }
 
     // { '(' Expression ')', Statement [Comparator Statement]* }
@@ -364,7 +340,8 @@ public class GrammarTree {
     private Token handleConstant(Variable.VarType type) {
         Token token = checkAny(KeywordTrue, KeywordFalse, ConstFloat, ConstInteger, ConstString);
         if (type != null && token != null && !type.equals(Variable.VarType.fromTokenType(token.getType()))) {
-            System.err.println("Expecting variable to be assigned type '" + type.name() + "' but was assigned a constant (" + token.getText() + ") of type '" + token.getType().name() + "'");
+            Variable.VarType varType = Variable.VarType.fromTokenType(token.getType());
+            System.err.println("Expecting variable to be assigned type '" + type.name() + "' but was assigned a constant (" + token.getText() + ") of type '" + varType.name()+ "'");
             return null;
         }
         return token;
