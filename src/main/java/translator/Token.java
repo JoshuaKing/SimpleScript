@@ -4,7 +4,7 @@ package translator;
  * Created by josking on 3/2/16.
  */
 public class Token {
-    enum Type {
+    public enum Type {
         WhiteSpace("\\s+", true),
         OpenBrace("{"),
         CloseBrace("}"),
