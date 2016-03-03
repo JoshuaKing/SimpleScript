@@ -1,6 +1,6 @@
 package handler;
 
-import translator.Token;
+import classes.Token;
 
 import java.util.List;
 

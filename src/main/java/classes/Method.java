@@ -1,4 +1,4 @@
-package translator;
+package classes;
 
 import java.util.List;
 

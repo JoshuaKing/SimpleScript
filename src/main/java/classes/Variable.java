@@ -1,16 +1,16 @@
-package translator;
+package classes;
 
 import com.google.common.collect.ImmutableList;
 
 import java.util.function.Function;
 
-import static translator.Token.Type.*;
+import static classes.Token.Type.*;
 
 /**
  * Created by josking on 3/2/16.
  */
 public class Variable {
-    enum VarType {
+    public enum VarType {
         Integer(ImmutableList.of(KeywordInt, ConstInteger), 0, java.lang.Integer::new),
         String(ImmutableList.of(KeywordString, ConstString), "", java.lang.String::new),
         Float(ImmutableList.of(KeywordFloat, ConstFloat), 0.0, java.lang.Float::new),
@@ -46,7 +46,7 @@ public class Variable {
 
 
     }
-    enum Access {
+    public enum Access {
         Public,
         Private,
         Argument

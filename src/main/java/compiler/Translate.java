@@ -1,5 +1,6 @@
-package translator;
+package compiler;
 
+import classes.Token;
 import org.apache.commons.io.IOUtils;
 
 import java.io.FileReader;

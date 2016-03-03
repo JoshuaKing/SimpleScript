@@ -1,4 +1,6 @@
-package translator;
+package compiler;
+
+import classes.Token;
 
 import java.util.ArrayList;
 import java.util.List;

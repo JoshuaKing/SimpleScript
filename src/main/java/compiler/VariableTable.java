@@ -1,4 +1,7 @@
-package translator;
+package compiler;
+
+import classes.Method;
+import classes.Variable;
 
 import java.util.HashMap;
 import java.util.List;
@@ -24,7 +27,7 @@ public class VariableTable {
     public void addToScope(Variable variable) {
         variables.put(variable.getName(), variable);
         VariableTable inst = instance;
-        System.out.println("Adding " + variable.getName() + " = " + variable.value + " to...");
+        System.out.println("Adding " + variable.getName() + " = " + variable.getValue() + " to...");
         while (inst != null) {
             System.out.println("-> " + inst.parentKey);
             inst = inst.getParent();
