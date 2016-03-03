@@ -13,20 +13,20 @@ import java.util.stream.Collectors;
  */
 public class LexicalAnalyser {
     public static List<Token> tokenize(String file) {
-        List<String> tokens = new ArrayList<>();
+        List<Token> tokens = new ArrayList<>();
         Pattern p = Pattern.compile("//.*|([\"']).*?\\1|/[*][\\d\\D]*?[*]/|\\d+\\.\\d+|[.(){}\\[\\];></%!:^]|[+*/!-]=|([|&*=+-])\\1?|\\s+");
-        Matcher m = p.matcher(file.replaceAll("", ""));
-        int from = 0;
-        while (m.find()) {
-            if (from != m.start()) tokens.add(file.substring(from, m.start()));
-            tokens.add(m.group());
-            from = m.start() + m.group().length();
-        }
-        return parse(tokens);
-    }
 
-    private static List<Token> parse(List<String> strings) {
-        return strings.stream().map(Token::new).filter(x -> {
+        String[] lines = file.split("(?=\\r?\\n)");
+        for (int r = 0; r < lines.length; r++) {
+            Matcher m = p.matcher(lines[r] + "\n");
+            int from = 0;
+            while (m.find()) {
+                if (from != m.start()) tokens.add(new Token(lines[r].substring(from, m.start()), r, from));
+                from = m.start() + m.group().length();
+                tokens.add(new Token(m.group(), r, from));
+            }
+        }
+        return tokens.stream().filter(x -> {
             return !x.getType().equals(Token.Type.WhiteSpace) &&
                     !x.getType().equals(Token.Type.LineComment) &&
                     !x.getType().equals(Token.Type.MultiLineComment);

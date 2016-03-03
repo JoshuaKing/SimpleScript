@@ -4,6 +4,7 @@ package classes;
  * Created by josking on 3/2/16.
  */
 public class Token {
+
     public enum Type {
         WhiteSpace("\\s+", true),
         OpenBrace("{"),
@@ -90,11 +91,23 @@ public class Token {
     }
 
     String text;
+    private final int lineNumber;
+    private final int columnNumber;
     Type type;
 
-    public Token(String text) {
+    public Token(String text, int lineNumber, int columnNumber) {
         this.text = text;
+        this.lineNumber = lineNumber;
+        this.columnNumber = columnNumber;
         type = Type.fromString(text);
+    }
+
+    public int getLineNumber() {
+        return lineNumber;
+    }
+
+    public int getColumnNumber() {
+        return columnNumber;
     }
 
     public Type getType() {

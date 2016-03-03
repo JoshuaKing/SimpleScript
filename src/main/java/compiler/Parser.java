@@ -163,7 +163,7 @@ public class Parser {
         if (type == null) return null;
         if (!check(Name)) return null;
         String name = tokens.prevText();
-        List<Variable> list = Arrays.asList(new Variable(Variable.Access.Argument, false, name, type));
+        List<Variable> list = Arrays.asList(new Variable(Variable.Modifiers.Argument, false, name, type));
         if (check(Comma)) {
             List<Variable> append = handleArguments();
             if (append != null) list.addAll(append);
@@ -184,11 +184,11 @@ public class Parser {
 
     // [{ public, private }] [static] Assignment
     private boolean handleClassVariableDefinitions() {
-        Variable.Access access = Variable.Access.Private;
-        if (check(KeywordPrivate)) access = Variable.Access.Private;
-        else if (check(KeywordPublic)) access = Variable.Access.Public;
+        Variable.Modifiers modifiers = Variable.Modifiers.Private;
+        if (check(KeywordPrivate)) modifiers = Variable.Modifiers.Private;
+        else if (check(KeywordPublic)) modifiers = Variable.Modifiers.Public;
         boolean isStatic = check(KeywordStatic);
-        return handleVariableDefine(access, isStatic);
+        return handleVariableDefine(modifiers, isStatic);
     }
 
     private boolean handleImport() {
@@ -212,11 +212,11 @@ public class Parser {
     }
 
     // { 'int', 'float', 'string', 'boolean' } Name Assignment ';'
-    private boolean handleVariableDefine(Variable.Access access, boolean isStatic) {
+    private boolean handleVariableDefine(Variable.Modifiers modifiers, boolean isStatic) {
         Token token = checkAny(KeywordInt, KeywordBoolean, KeywordFloat, KeywordString);
         if (token == null) return false;
         if (!check(Name)) return false;
-        Variable variable = new Variable(access, isStatic, tokens.prevText(), token.getType());
+        Variable variable = new Variable(modifiers, isStatic, tokens.prevText(), token.getType());
 
         if (check(Semicolon)) {
             VariableTable.getInstance().addToScope(variable);

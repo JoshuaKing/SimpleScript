@@ -16,7 +16,7 @@ public class GrammarStatement extends GrammarRule<Boolean> {
 
     @Override
     public Boolean parseGrammar() throws GrammarException {
-        //TODO: if (handleMethodCall(type)) return true;
+        if (required(new GrammarMethodCall(type))) return true;
         //TODO: if (handleInstanceCreation()) return true;
         if (required(new GrammarConstant(type)) != null) return true;
         //TODO: if (required(new GrammarExistingVariable(type))) return true;

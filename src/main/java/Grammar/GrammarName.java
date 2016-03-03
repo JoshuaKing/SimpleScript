@@ -9,11 +9,9 @@ import static classes.Token.Type.Name;
 public class GrammarName extends GrammarRule<String> {
     @Override
     public String parseGrammar() throws GrammarException {
-        required(Name);
-        String name = tokens.prevText();
+        String name = required(Name).getText();
         while (optional(Dot)) {
-            required(Name);
-            name += '.' + tokens.prevText();
+            name += '.' + required(Name).getText();
         }
         return name;
     }

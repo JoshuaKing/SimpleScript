@@ -71,9 +71,16 @@ public abstract class GrammarRule<T> {
         }
     }
 
-    public void repeatable(Class<? extends GrammarRule<T>> grammarRule) throws GrammarException {
-        required(grammarRule);
-        while (optional(grammarRule) != null);
+    public <R, T extends GrammarRule<R>> R repeatable(T grammarRule) throws GrammarException {
+        R value = required(grammarRule);
+        while ((value = optional(grammarRule)) != null);
+        return value;
+    }
+
+    public T repeatable(Class<? extends GrammarRule<T>> grammarRule) throws GrammarException {
+        T value = required(grammarRule);
+        while ((value = optional(grammarRule)) != null);
+        return value;
     }
 
     public void reset(int to) {
@@ -108,7 +115,7 @@ public abstract class GrammarRule<T> {
             }
         }
 
-        except("Expected one types '" + Arrays.toString(types) + "' but was '" + tokens.getType().name() + "'");
+        except("Expected one of types " + Arrays.toString(types) + " but was '" + tokens.getType().name() + "'");
         return null;
     }
 
@@ -116,11 +123,16 @@ public abstract class GrammarRule<T> {
         return tokens.check(type);
     }
 
-    protected void ensure(Boolean value) throws GrammarException {
+    protected void ensure(boolean value) throws GrammarException {
         if (!value) except("Failed boolean test.");
     }
 
-    protected void ensure(Object value) throws GrammarException {
+    protected <T> T ensure(T value) throws GrammarException {
         if (value == null) except("Failed non-null test.");
+        return value;
+    }
+
+    protected <T> boolean notNull(T obj) {
+        return obj != null;
     }
 }

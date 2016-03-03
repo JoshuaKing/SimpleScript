@@ -9,7 +9,7 @@ import static classes.Token.Type.OpenParenthesis;
  * Created by Josh on 4/03/2016.
  */
 public class GrammarExpression extends GrammarRule<Boolean> {
-    private Variable.VarType type;
+    private Variable.VarType type = null;
 
     public GrammarExpression(Variable.VarType type) {
         this.type = type;

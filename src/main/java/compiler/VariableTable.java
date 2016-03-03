@@ -64,7 +64,7 @@ public class VariableTable {
         }
         for (Object obj : findPackage.values()) {
             Variable variable = (Variable) obj;
-            if (variable.getAccess().equals(Variable.Access.Public)) instance.addToScope(variable);
+            if (variable.getModifiers().equals(Variable.Modifiers.Public)) instance.addToScope(variable);
         }
         return true;
     }

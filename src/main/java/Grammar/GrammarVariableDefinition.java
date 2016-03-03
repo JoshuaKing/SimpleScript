@@ -10,19 +10,19 @@ import static classes.Token.Type.*;
  * Created by Josh on 4/03/2016.
  */
 public class GrammarVariableDefinition extends GrammarRule<Boolean> {
-    Variable.Access access;
+    Variable.Modifiers modifiers;
     boolean isStatic;
 
-    public GrammarVariableDefinition(Variable.Access access, boolean isStatic) throws GrammarException {
-        this.access = access;
+    public GrammarVariableDefinition(Variable.Modifiers modifiers, boolean isStatic) throws GrammarException {
+        this.modifiers = modifiers;
         this.isStatic = isStatic;
     }
 
     @Override
     public Boolean parseGrammar() throws GrammarException {
-        Token token = required(KeywordInt, KeywordBoolean, KeywordFloat, KeywordString);
+        Token token = required(GrammarVariableTypes.class);
         String name = required(GrammarName.class);
-        Variable variable = new Variable(access, isStatic, name, token.getType());
+        Variable variable = new Variable(modifiers, isStatic, name, token.getType());
 
         if (optional(Semicolon)) {
             VariableTable.getInstance().addToScope(variable);
