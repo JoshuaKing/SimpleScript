@@ -7,7 +7,9 @@ public class GrammarFile extends GrammarRule<Boolean> {
 
     @Override
     public Boolean parseGrammar() throws GrammarException {
-        create(GrammarPackage.class);
+        required(GrammarPackage.class);
+        optional(GrammarImport.class);
+        required(GrammarClass.class);
         return true;
     }
 }

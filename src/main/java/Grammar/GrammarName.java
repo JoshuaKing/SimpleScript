@@ -9,10 +9,10 @@ import static classes.Token.Type.Name;
 public class GrammarName extends GrammarRule<String> {
     @Override
     public String parseGrammar() throws GrammarException {
-        check(Name);
+        required(Name);
         String name = tokens.prevText();
-        while (next(Dot)) {
-            check(Name);
+        while (optional(Dot)) {
+            required(Name);
             name += '.' + tokens.prevText();
         }
         return name;

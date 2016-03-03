@@ -11,7 +11,7 @@ public class GrammarPackage extends GrammarRule<VariableTable> {
 
     @Override
     public VariableTable parseGrammar() throws GrammarException {
-        check(KeywordPackage);
-        return VariableTable.addPackage(create(GrammarName.class));
+        required(KeywordPackage);
+        return VariableTable.addPackage(required(GrammarName.class));
     }
 }

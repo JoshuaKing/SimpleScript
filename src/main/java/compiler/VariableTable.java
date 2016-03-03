@@ -51,7 +51,7 @@ public class VariableTable {
         return instance;
     }
 
-    public void importPackage(String pkg) {
+    public static boolean importPackage(String pkg) {
         String[] pkgs = pkg.split("\\.");
         Map<String, Object> findPackage = getRoot().variables;
         for (String p : pkgs) {
@@ -59,13 +59,14 @@ public class VariableTable {
                 findPackage = (Map<String, Object>) findPackage.get(p);
             } else {
                 System.err.println("Package " + pkg + " not available for import (not found).");
-                return;
+                return false;
             }
         }
         for (Object obj : findPackage.values()) {
             Variable variable = (Variable) obj;
             if (variable.getAccess().equals(Variable.Access.Public)) instance.addToScope(variable);
         }
+        return true;
     }
 
     private static VariableTable getRoot() {

@@ -1,8 +1,10 @@
 package Grammar;
 
+import classes.Token;
 import handler.TokenIterator;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -22,19 +24,60 @@ public abstract class GrammarRule<T> {
     public abstract T parseGrammar() throws GrammarException;
 
 
-    <T> T create(Class<? extends GrammarRule<T>> grammarRule) throws GrammarException {
-        try {
-            GrammarRule<T> grammar = grammarRule.newInstance();
-            grammar.setTokens(tokens);
-            T value = grammar.parseGrammar();
-            grammars.add(grammar);
-            return value;
-        } catch (InstantiationException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
+    <T> T required(Class<? extends GrammarRule<T>>... grammarRules) throws GrammarException {
+        GrammarException firstError = null;
+        for (Class<? extends GrammarRule<T>> grammarRule : grammarRules) {
+            try {
+                GrammarRule<T> grammar = grammarRule.newInstance();
+                grammar.setTokens(tokens);
+                T value = grammar.parseGrammar();
+                grammars.add(grammar);
+                return value;
+            } catch (InstantiationException e) {
+                e.printStackTrace();
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            } catch (GrammarException e) {
+                // Catch until non of the rules have succeeded
+                if (firstError == null) firstError = e;
+            }
         }
+        except(firstError.getMessage());
         return null;
+    }
+
+    <T> T optional(Class<? extends GrammarRule<T>> grammarRule) {
+        try {
+            return required(grammarRule);
+        } catch (GrammarException e) {
+            System.err.println("Optional Rule " + grammarRule.getSimpleName() + " failed: " + e.getMessage());
+            return null;
+        }
+    }
+
+    <R, T extends GrammarRule<R>> R required(T grammar) throws GrammarException {
+        grammar.setTokens(tokens);
+        R value = grammar.parseGrammar();
+        grammars.add(grammar);
+        return value;
+    }
+
+    <R, T extends GrammarRule<R>> R optional(T grammar) {
+        try {
+            return required(grammar);
+        } catch (GrammarException e) {
+            System.err.println("Optional Rule " + grammar.getClass().getSimpleName() + " failed: " + e.getMessage());
+            return null;
+        }
+    }
+
+    public void repeatable(Class<? extends GrammarRule<T>> grammarRule) throws GrammarException {
+        required(grammarRule);
+        while (optional(grammarRule) != null);
+    }
+
+    public void reset(int to) {
+        tokens.setIndex(to);
     }
 
     private String toString(int level) {
@@ -58,12 +101,26 @@ public abstract class GrammarRule<T> {
         throw new GrammarException(error);
     }
 
-    protected boolean check(classes.Token.Type type) throws GrammarException {
-        if (!tokens.check(type)) except("Expected type '" + type.name() + "' but was '" + tokens.getType().name() + "'");
-        return true;
+    protected Token required(classes.Token.Type... types) throws GrammarException {
+        for (classes.Token.Type type : types) {
+            if (tokens.check(type)) {
+                return tokens.prev();
+            }
+        }
+
+        except("Expected one types '" + Arrays.toString(types) + "' but was '" + tokens.getType().name() + "'");
+        return null;
     }
 
-    protected boolean next(classes.Token.Type type) {
+    protected boolean optional(classes.Token.Type type) {
         return tokens.check(type);
+    }
+
+    protected void ensure(Boolean value) throws GrammarException {
+        if (!value) except("Failed boolean test.");
+    }
+
+    protected void ensure(Object value) throws GrammarException {
+        if (value == null) except("Failed non-null test.");
     }
 }

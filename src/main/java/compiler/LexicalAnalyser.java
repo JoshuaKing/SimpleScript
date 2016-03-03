@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 public class LexicalAnalyser {
     public static List<Token> tokenize(String file) {
         List<String> tokens = new ArrayList<>();
-        Pattern p = Pattern.compile("//.*|/[*]([\\d\\D]*)[*]/|([\"']).*?\\1|\\d+\\.\\d+|[.(){}\\[\\];></%!:^]|[+*/!-]=|([|&*=+-])\\1?|\\s+");
+        Pattern p = Pattern.compile("//.*|([\"']).*?\\1|/[*][\\d\\D]*?[*]/|\\d+\\.\\d+|[.(){}\\[\\];></%!:^]|[+*/!-]=|([|&*=+-])\\1?|\\s+");
         Matcher m = p.matcher(file.replaceAll("", ""));
         int from = 0;
         while (m.find()) {
