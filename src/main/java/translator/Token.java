@@ -18,7 +18,7 @@ public class Token {
         Semicolon(";"),
         ConstFloat("\\d+\\.\\d+", true),
         ConstInteger("\\d+", true),
-        ConstString("([\"'].*?)\\1", true),
+        ConstString("([\"']).*?\\1", true),
         DoubleQuote("\""),
         SingleQuote("'"),
         KeywordTrue("true"),
@@ -64,8 +64,7 @@ public class Token {
         BitwiseXor("^"),
         Name("[a-zA-Z][a-zA-Z0-9]*", true),
         LineComment("//.*", true),
-        OpenComment("/*"),
-        CloseComment("*/"),
+        MultiLineComment("/[*]([\\d\\D]*)[*]/", true),
         Unknown(".*", true)
         ;
 

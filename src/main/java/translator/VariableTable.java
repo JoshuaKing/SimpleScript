@@ -24,7 +24,7 @@ public class VariableTable {
     public void addToScope(Variable variable) {
         variables.put(variable.getName(), variable);
         VariableTable inst = instance;
-        System.out.println("Adding " + variable.getName() + " to...");
+        System.out.println("Adding " + variable.getName() + " = " + variable.value + " to...");
         while (inst != null) {
             System.out.println("-> " + inst.parentKey);
             inst = inst.getParent();

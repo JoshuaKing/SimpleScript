@@ -13,12 +13,11 @@ public class Translate {
     public static void main(String[] args) throws Exception {
         StringWriter sw = new StringWriter(10);
         IOUtils.copy(new FileReader("files/test.ss"), sw);
-        List<String> tok = Tokenizer.tokenize(sw.toString());
-        List<Token> tokens = Tokenizer.parse(tok);
+        List<Token> tokens = LexicalAnalyser.tokenize(sw.toString());
         for (Token t : tokens) {
             System.out.println(t.getType().name() + " : " + t.getText());
         }
-        GrammarTree tree = new GrammarTree(tokens);
+        Parser tree = new Parser(tokens);
         for (Token t : tree.getTree()) {
             System.out.println(t.getType().name() + " = " + t.getText());
         }

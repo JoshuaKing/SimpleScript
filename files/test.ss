@@ -4,7 +4,7 @@ package x.y.z
 import a.b.c
 
 class MyClass {
-    private int a = 2; // Test Comment 1
+    private int a = "hi there"; // Test Comment 1
     private int y = 3;
     // Test Comment 2
 

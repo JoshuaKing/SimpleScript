@@ -63,13 +63,13 @@ import static translator.Variable.VarType.fromTokenType;
 /**
  * Created by josking on 3/2/16.
  */
-public class GrammarTree {
+public class Parser {
     TokenIterator tokens;
 
     List<Token> tree;
     Map<String, Object> rootTable = new HashMap<>();
 
-    public GrammarTree (List<Token> tokens) {
+    public Parser(List<Token> tokens) {
         this.tokens = new TokenIterator(tokens);
         tree = new ArrayList<>();
         while (this.tokens.getIndex() < tokens.size()) {
@@ -220,6 +220,7 @@ public class GrammarTree {
             return true;
         }
         if (!handleAssignment(variable.getType())) return false;
+        variable.setValue(tokens.prevText());
         VariableTable.getInstance().addToScope(variable);
         return check(Semicolon);
     }

@@ -4,9 +4,6 @@ import translator.Token;
 
 import java.util.List;
 
-import static translator.Token.Type.LineComment;
-import static translator.Token.Type.WhiteSpace;
-
 /**
  * Created by josking on 3/3/16.
  */
@@ -43,7 +40,6 @@ public class TokenIterator {
     }
 
     public boolean check(Token.Type type) {
-        while (getType().equals(WhiteSpace) || getType().equals(LineComment)) increment();
         if (getType().equals(type)) {
             increment();
             return true;
