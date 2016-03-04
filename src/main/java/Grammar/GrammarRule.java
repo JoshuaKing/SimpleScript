@@ -79,8 +79,8 @@ public abstract class GrammarRule<T> {
                 R value = required(grammar);
                 if (notNull(value)) return value;
             } catch (GrammarException e) {
-                System.out.println("Test Rule " + grammar.getClass().getSimpleName() + " failed: " + e.getMessage());
                 exception = exception.adjust(e, tokens.getIndex(), tokens.prev());
+                System.out.println("Test Rule " + grammar.getClass().getSimpleName() + " failed: " + exception.getError().getMessage());
                 reset(repeat);
             }
         }
@@ -122,6 +122,10 @@ public abstract class GrammarRule<T> {
 
     protected static void except(String error) throws GrammarException {
         throw new GrammarException(error);
+    }
+
+    protected static void except(DebugException error) throws GrammarException {
+        throw error.getError();
     }
 
     protected Token required(classes.Token.Type... types) throws GrammarException {
