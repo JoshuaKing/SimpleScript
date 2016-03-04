@@ -1,5 +1,6 @@
 package Grammar;
 
+import classes.Expression;
 import classes.Variable;
 
 import static classes.Token.Type.OperatorEquals;
@@ -7,7 +8,7 @@ import static classes.Token.Type.OperatorEquals;
 /**
  * Created by Josh on 4/03/2016.
  */
-public class GrammarAssignment extends GrammarRule<Boolean> {
+public class GrammarAssignment extends GrammarRule<Expression> {
     private Variable.VarType type;
 
     public GrammarAssignment(Variable.VarType type) {
@@ -15,7 +16,7 @@ public class GrammarAssignment extends GrammarRule<Boolean> {
     }
 
     @Override
-    public Boolean parseGrammar() throws GrammarException {
+    public Expression parseGrammar() throws GrammarException {
         required(OperatorEquals);
         return required(new GrammarExpression(type));
     }

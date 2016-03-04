@@ -71,6 +71,17 @@ public abstract class GrammarRule<T> {
         }
     }
 
+    <R, T extends GrammarRule<R>> R test(T grammar) {
+        int repeat = tokens.getIndex();
+        try {
+            return required(grammar);
+        } catch (GrammarException e) {
+            System.err.println("Test Rule " + grammar.getClass().getSimpleName() + " failed: " + e.getMessage());
+            reset(repeat);
+            return null;
+        }
+    }
+
     public <R, T extends GrammarRule<R>> R repeatable(T grammarRule) throws GrammarException {
         R value = required(grammarRule);
         while ((value = optional(grammarRule)) != null);

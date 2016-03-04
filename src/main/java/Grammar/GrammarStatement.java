@@ -1,5 +1,6 @@
 package Grammar;
 
+import classes.Expression;
 import classes.Variable;
 
 import static classes.Token.Type.BooleanNot;
@@ -7,7 +8,7 @@ import static classes.Token.Type.BooleanNot;
 /**
  * Created by Josh on 4/03/2016.
  */
-public class GrammarStatement extends GrammarRule<Boolean> {
+public class GrammarStatement extends GrammarRule<Expression> {
     private Variable.VarType type;
 
     public GrammarStatement(Variable.VarType type) {
@@ -15,16 +16,26 @@ public class GrammarStatement extends GrammarRule<Boolean> {
     }
 
     @Override
-    public Boolean parseGrammar() throws GrammarException {
-        if (required(new GrammarMethodCall(type))) return true;
+    public Expression parseGrammar() throws GrammarException {
+        Expression expression = test(new GrammarMethodCall(type));
+        if (notNull(expression)) return expression;
         //TODO: if (handleInstanceCreation()) return true;
-        if (required(new GrammarConstant(type)) != null) return true;
+        expression = test(new GrammarConstant(type));
+        if (notNull(expression)) return expression;
         //TODO: if (required(new GrammarExistingVariable(type))) return true;
-        if (required(GrammarSoloOperator.class) != null) return true;
+        expression = test(new GrammarSoloOperator(type));
+        if (notNull(expression)) return expression;
 
         optional(BooleanNot);
-        required(GrammarDualOperator.class, GrammarComparison.class);
-        required(new GrammarExpression(type));
+        boolean isComparison = isComparison();
+        expression = required(new GrammarExpression(type));
+        if (isComparison && !expression.isConstant()) return new Expression(Expression.Type.Expression, Variable.VarType.Boolean);
+        return expression;
+    }
+
+    private boolean isComparison() throws GrammarException {
+        if (notNull(optional(GrammarDualOperator.class))) return false;
+        required(GrammarComparison.class);
         return true;
     }
 }

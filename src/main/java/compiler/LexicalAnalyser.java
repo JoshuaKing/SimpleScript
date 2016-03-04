@@ -21,9 +21,9 @@ public class LexicalAnalyser {
             Matcher m = p.matcher(lines[r] + "\n");
             int from = 0;
             while (m.find()) {
-                if (from != m.start()) tokens.add(new Token(lines[r].substring(from, m.start()), r, from));
-                from = m.start() + m.group().length();
+                if (from != m.start()) tokens.add(new Token(lines[r].substring(from, m.start()), r, from - 1));
                 tokens.add(new Token(m.group(), r, from));
+                from = m.start() + m.group().length();
             }
         }
         return tokens.stream().filter(x -> {

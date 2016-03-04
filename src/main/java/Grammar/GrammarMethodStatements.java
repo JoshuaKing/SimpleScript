@@ -6,6 +6,7 @@ package Grammar;
 public class GrammarMethodStatements extends GrammarRule<Boolean> {
     @Override
     public Boolean parseGrammar() throws GrammarException {
-        return repeatable(new GrammarExpression(null));
+        repeatable(new GrammarExpression(null));
+        return true;
     }
 }
