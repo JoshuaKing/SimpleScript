@@ -18,7 +18,7 @@ public class GrammarExpression extends GrammarRule<Expression> {
     }
 
     @Override
-    // '(' Expression ')' | Statement [{DualOp, Comp} Expression]* | ['!'] Expression
+    // '(' Expression ')' | Statement [{DualOp, Comp} Expression]* | ['!'] Expression | '{' SubScope '}'
     public Expression parseGrammar() throws GrammarException {
         Expression expression;
         if (optional(OpenParenthesis)) {
@@ -32,11 +32,15 @@ public class GrammarExpression extends GrammarRule<Expression> {
         }
 
         expression = required(new GrammarStatement(type));
-
-        while (notNull(optional(GrammarComparison.class))) {
-            required(new GrammarStatement(type));
-            expression = new Expression(Expression.Type.Expression, Variable.VarType.Boolean);
+        
+        if (notNull(optional(GrammarComparison.class))) {
+            expression = required(new GrammarExpression(type));
+            return new Expression(Expression.Type.Expression, Variable.VarType.Boolean);
         }
+        if (notNull(optional(GrammarDualOperator.class))) {
+            return required(new GrammarExpression(type));
+        }
+
         return expression;
     }
 }

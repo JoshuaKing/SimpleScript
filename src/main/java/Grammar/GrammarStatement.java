@@ -17,12 +17,31 @@ public class GrammarStatement extends GrammarRule<Expression> {
     }
 
     @Override
+    // MethodCall | NewInstance | { Constant, Variable } [SoloOp]
     public Expression parseGrammar() throws GrammarException {
         Expression expression = null;
+        DebugException error = null;
         try {
-            expression = test(new GrammarMethodCall(type), new GrammarExistingVariable(type));
-            return expression;
-        } catch (DebugException error) {
+            try {
+                expression = test(new GrammarMethodCall(type));
+                if (notNull(expression)) return expression;
+            } catch (DebugException e) {
+                error = e;
+            }
+            try {
+                expression = test(new GrammarConstant(type), new GrammarExistingVariable(type));
+                if (notNull(expression)) return expression;
+            } catch (DebugException e) {
+                error = e.adjust(error);
+            }
+            try {
+                expression = test(new GrammarSoloOperator(type));
+                if (notNull(expression)) return expression;
+            } catch (DebugException e) {
+                error = e.adjust(error);
+            }
+            throw error;
+        } catch (DebugException err) {
             optional(BooleanNot);
             boolean isComparison = isComparison();
             try {
@@ -36,6 +55,7 @@ public class GrammarStatement extends GrammarRule<Expression> {
     }
 
     private boolean isComparison() throws GrammarException {
+        if (notNull(optional(new GrammarDualOperator(type)))) return false;
         required(GrammarComparison.class);
         return true;
     }

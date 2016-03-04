@@ -22,6 +22,12 @@ public class DebugException extends Throwable {
         return new DebugException(e, loc, t);
     }
 
+    public DebugException adjust(DebugException e) {
+        if (e == null) return this;
+        if (index > e.index) return this;
+        return e;
+    }
+
     public GrammarException getError() {
         return error;
     }
