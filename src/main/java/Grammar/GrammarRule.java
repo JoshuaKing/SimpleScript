@@ -1,5 +1,6 @@
 package Grammar;
 
+import classes.DebugException;
 import classes.Token;
 import handler.TokenIterator;
 
@@ -50,7 +51,6 @@ public abstract class GrammarRule<T> {
         try {
             return required(grammarRule);
         } catch (GrammarException e) {
-            System.err.println("Optional Rule " + grammarRule.getSimpleName() + " failed: " + e.getMessage());
             return null;
         }
     }
@@ -66,20 +66,25 @@ public abstract class GrammarRule<T> {
         try {
             return required(grammar);
         } catch (GrammarException e) {
-            System.err.println("Optional Rule " + grammar.getClass().getSimpleName() + " failed: " + e.getMessage());
             return null;
         }
     }
 
-    <R, T extends GrammarRule<R>> R test(T grammar) {
-        int repeat = tokens.getIndex();
-        try {
-            return required(grammar);
-        } catch (GrammarException e) {
-            System.err.println("Test Rule " + grammar.getClass().getSimpleName() + " failed: " + e.getMessage());
-            reset(repeat);
-            return null;
+    <R, T extends GrammarRule<R>> R test(T... grammars) throws DebugException {
+        DebugException exception = new DebugException(null, 0, null);
+        for (T grammar : grammars) {
+            int repeat = tokens.getIndex();
+            try {
+                System.out.println("Testing Rule " + grammar.getClass().getSimpleName());
+                R value = required(grammar);
+                if (notNull(value)) return value;
+            } catch (GrammarException e) {
+                System.out.println("Test Rule " + grammar.getClass().getSimpleName() + " failed: " + e.getMessage());
+                exception = exception.adjust(e, tokens.getIndex(), tokens.prev());
+                reset(repeat);
+            }
         }
+        throw exception;
     }
 
     public <R, T extends GrammarRule<R>> R repeatable(T grammarRule) throws GrammarException {

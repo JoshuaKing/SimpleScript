@@ -29,7 +29,6 @@ public class GrammarMethodParameters extends GrammarRule<Boolean> {
                 except("Not enough parameters for method: expected " + parameters.size() + " but only have " + i);
             }
         }
-        System.out.println("Parameters done");
         return true;
     }
 }

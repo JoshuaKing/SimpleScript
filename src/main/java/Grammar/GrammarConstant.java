@@ -15,13 +15,12 @@ public class GrammarConstant extends GrammarRule<Expression> {
 
     public GrammarConstant(Variable.VarType type) throws GrammarException {
         this.type = type;
-        ensure(notNull(type));
     }
 
     @Override
     public Expression parseGrammar() throws GrammarException {
         Token token = required(KeywordTrue, KeywordFalse, ConstFloat, ConstInteger, ConstString);
-        if (!type.equals(Variable.VarType.fromTokenType(token.getType()))) {
+        if (notNull(type) && !type.equals(Variable.VarType.fromTokenType(token.getType()))) {
             Variable.VarType varType = Variable.VarType.fromTokenType(token.getType());
             except("Expecting variable to be assigned type '" + type.name() + "' but was assigned a constant (" + token.getText() + ") of type '" + varType.name()+ "'");
         }

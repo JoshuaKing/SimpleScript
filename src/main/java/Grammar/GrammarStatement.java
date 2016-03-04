@@ -1,5 +1,6 @@
 package Grammar;
 
+import classes.DebugException;
 import classes.Expression;
 import classes.Variable;
 
@@ -17,20 +18,20 @@ public class GrammarStatement extends GrammarRule<Expression> {
 
     @Override
     public Expression parseGrammar() throws GrammarException {
-        Expression expression = test(new GrammarMethodCall(type));
-        if (notNull(expression)) return expression;
-        //TODO: if (handleInstanceCreation()) return true;
-        expression = test(new GrammarConstant(type));
-        if (notNull(expression)) return expression;
-        expression = test(new GrammarExistingVariable(type));
-        if (notNull(expression)) return expression;
-        expression = test(new GrammarSoloOperator(type));
-        if (notNull(expression)) return expression;
-
-        optional(BooleanNot);
-        boolean isComparison = isComparison();
-        expression = required(new GrammarExpression(type));
-        if (isComparison && !expression.isConstant()) return new Expression(Expression.Type.Expression, Variable.VarType.Boolean);
+        Expression expression = null;
+        try {
+            expression = test(new GrammarMethodCall(type), new GrammarConstant(type), new GrammarExistingVariable(type), new GrammarSoloOperator(type));
+            return expression;
+        } catch (DebugException error) {
+            optional(BooleanNot);
+            boolean isComparison = isComparison();
+            try {
+                expression = required(new GrammarExpression(type));
+            } catch (GrammarException e) {
+                throw error.adjust(e, tokens.getIndex(), tokens.tok()).getError();
+            }
+            if (isComparison && !expression.isConstant()) expression = new Expression(Expression.Type.Expression, Variable.VarType.Boolean);
+        }
         return expression;
     }
 

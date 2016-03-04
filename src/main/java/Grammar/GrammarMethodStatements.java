@@ -11,7 +11,7 @@ public class GrammarMethodStatements extends GrammarRule<Boolean> {
 
         required(new GrammarExpression(null));
         required(Semicolon);
-        while (notNull(test(new GrammarExpression(null)))) required(Semicolon);
+        while (notNull(optional(new GrammarExpression(null)))) required(Semicolon);
         return true;
     }
 }

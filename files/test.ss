@@ -8,7 +8,7 @@ class MyClass {
 
     void x(int b) {
         x(y);
-        System.out.println("Hello, World " + x.y.z.MyClass.a);
+        x("Hello, World " + x.y.z.MyClass.a);
         if (a ==b) {
             return a < 20.2 if b >20.2;
         }
