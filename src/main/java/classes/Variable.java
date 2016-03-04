@@ -46,31 +46,31 @@ public class Variable {
 
 
     }
-    public enum Modifiers {
+    public enum Modifier {
         Public,
         Private,
         Argument
     }
 
-    Modifiers modifiers;
+    Modifier modifier;
     boolean isStatic = false;
     String name;
     VarType varType;
     Object value;
 
-    public Variable(Modifiers modifiers, boolean isStatic, String name, Object value, VarType varType) {
+    public Variable(Modifier modifier, boolean isStatic, String name, Object value, VarType varType) {
         this.name = name;
         this.varType = varType;
         this.value = value;
-        this.modifiers = modifiers;
+        this.modifier = modifier;
         this.isStatic = isStatic;
     }
 
-    public Variable(Modifiers modifiers, boolean isStatic, String name, Token.Type tokenType) {
+    public Variable(Modifier modifier, boolean isStatic, String name, Token.Type tokenType) {
         this.name = name;
         this.varType = VarType.fromTokenType(tokenType);
         this.value = varType.getDefaultValue();
-        this.modifiers = modifiers;
+        this.modifier = modifier;
         this.isStatic = isStatic;
     }
 
@@ -90,8 +90,8 @@ public class Variable {
         return value;
     }
 
-    public Modifiers getModifiers() {
-        return modifiers;
+    public Modifier getModifier() {
+        return modifier;
     }
 
     public boolean isStatic() {

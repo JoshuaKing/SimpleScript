@@ -17,11 +17,11 @@ public class GrammarArguments extends GrammarRule<List<Variable>> {
     public List<Variable> parseGrammar() throws GrammarException {
         Token token = required(GrammarVariableTypes.class);
         String name = required(GrammarName.class);
-        List<Variable> list = Arrays.asList(new Variable(Variable.Modifiers.Argument, false, name, token.getType()));
+        List<Variable> list = Arrays.asList(new Variable(Variable.Modifier.Argument, false, name, token.getType()));
         if (optional(Comma)) {
             token = required(GrammarVariableTypes.class);
             name = required(GrammarName.class);
-            list.add(new Variable(Variable.Modifiers.Argument, false, name, token.getType()));
+            list.add(new Variable(Variable.Modifier.Argument, false, name, token.getType()));
         }
         return list;
     }

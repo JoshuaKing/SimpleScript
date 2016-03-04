@@ -28,11 +28,11 @@ public class GrammarClassDefinition extends GrammarRule<Boolean> {
 
         @Override
         public Boolean parseGrammar() throws GrammarException {
-            Variable.Modifiers modifiers = Variable.Modifiers.Private;
-            if (optional(KeywordPrivate)) modifiers = Variable.Modifiers.Private;
-            else if (optional(KeywordPublic)) modifiers = Variable.Modifiers.Public;
+            Variable.Modifier modifier = Variable.Modifier.Private;
+            if (optional(KeywordPrivate)) modifier = Variable.Modifier.Private;
+            else if (optional(KeywordPublic)) modifier = Variable.Modifier.Public;
             boolean isStatic = optional(KeywordStatic);
-            required(new GrammarVariableDefinition(modifiers, isStatic));
+            required(new GrammarVariableDefinition(modifier, isStatic));
             return true;
         }
     }
