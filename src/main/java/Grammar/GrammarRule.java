@@ -25,7 +25,7 @@ public abstract class GrammarRule<T> {
 
 
     <T> T required(Class<? extends GrammarRule<T>>... grammarRules) throws GrammarException {
-        GrammarException firstError = null;
+        GrammarException lastError = null;
         for (Class<? extends GrammarRule<T>> grammarRule : grammarRules) {
             try {
                 GrammarRule<T> grammar = grammarRule.newInstance();
@@ -38,11 +38,11 @@ public abstract class GrammarRule<T> {
             } catch (IllegalAccessException e) {
                 e.printStackTrace();
             } catch (GrammarException e) {
-                // Catch until non of the rules have succeeded
-                if (firstError == null) firstError = e;
+                // Catch last error to display
+                lastError = e;
             }
         }
-        except(firstError.getMessage());
+        except(lastError.getMessage());
         return null;
     }
 

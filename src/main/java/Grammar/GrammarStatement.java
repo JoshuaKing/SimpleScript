@@ -22,7 +22,8 @@ public class GrammarStatement extends GrammarRule<Expression> {
         //TODO: if (handleInstanceCreation()) return true;
         expression = test(new GrammarConstant(type));
         if (notNull(expression)) return expression;
-        //TODO: if (required(new GrammarExistingVariable(type))) return true;
+        expression = test(new GrammarExistingVariable(type));
+        if (notNull(expression)) return expression;
         expression = test(new GrammarSoloOperator(type));
         if (notNull(expression)) return expression;
 
