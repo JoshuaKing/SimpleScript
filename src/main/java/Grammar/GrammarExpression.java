@@ -32,12 +32,12 @@ public class GrammarExpression extends GrammarRule<Expression> {
         }
 
         expression = required(new GrammarStatement(type));
-        
+
         if (notNull(optional(GrammarComparison.class))) {
             expression = required(new GrammarExpression(type));
             return new Expression(Expression.Type.Expression, Variable.VarType.Boolean);
         }
-        if (notNull(optional(GrammarDualOperator.class))) {
+        if (notNull(optional(new GrammarDualOperator(type)))) {
             return required(new GrammarExpression(type));
         }
 
