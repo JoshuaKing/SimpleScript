@@ -3,6 +3,7 @@ package Grammar;
 import classes.Expression;
 import classes.Variable;
 
+import static classes.Token.Type.BooleanNot;
 import static classes.Token.Type.CloseParenthesis;
 import static classes.Token.Type.OpenParenthesis;
 
@@ -17,13 +18,22 @@ public class GrammarExpression extends GrammarRule<Expression> {
     }
 
     @Override
+    // '(' Expression ')' | Statement [{DualOp, Comp} Expression]* | ['!'] Expression
     public Expression parseGrammar() throws GrammarException {
+        Expression expression;
         if (optional(OpenParenthesis)) {
-            required(new GrammarExpression(type));
+            expression = required(new GrammarExpression(type));
             required(CloseParenthesis);
+            return expression;
         }
-        Expression expression = required(new GrammarStatement(type));
-        while (optional(GrammarComparison.class) != null) {
+
+        if (optional(BooleanNot)) {
+            return required(new GrammarExpression(type));
+        }
+
+        expression = required(new GrammarStatement(type));
+
+        while (notNull(optional(GrammarComparison.class))) {
             required(new GrammarStatement(type));
             expression = new Expression(Expression.Type.Expression, Variable.VarType.Boolean);
         }

@@ -20,6 +20,6 @@ public class GrammarSoloOperator extends GrammarRule<Expression> {
     @Override
     public Expression parseGrammar() throws GrammarException {
         required(OperatorDecrement, OperatorIncrement);
-        return new Expression(Expression.Type.Expression, type);
+        return new Expression(Expression.Type.Expression, Variable.VarType.Integer);
     }
 }

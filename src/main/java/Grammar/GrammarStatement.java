@@ -20,7 +20,7 @@ public class GrammarStatement extends GrammarRule<Expression> {
     public Expression parseGrammar() throws GrammarException {
         Expression expression = null;
         try {
-            expression = test(new GrammarMethodCall(type), new GrammarConstant(type), new GrammarExistingVariable(type), new GrammarSoloOperator(type));
+            expression = test(new GrammarMethodCall(type), new GrammarExistingVariable(type));
             return expression;
         } catch (DebugException error) {
             optional(BooleanNot);
@@ -36,7 +36,6 @@ public class GrammarStatement extends GrammarRule<Expression> {
     }
 
     private boolean isComparison() throws GrammarException {
-        if (notNull(optional(GrammarDualOperator.class))) return false;
         required(GrammarComparison.class);
         return true;
     }
