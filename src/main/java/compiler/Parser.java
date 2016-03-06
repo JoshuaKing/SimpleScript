@@ -95,7 +95,7 @@ public class Parser {
     // 'class' Name '{' ClassStatements '}'
     private boolean handleClass() {
         if (!check(Name)) return false;
-        VariableTable.getInstance().addScope(tokens.prevText());
+        VariableTable.getInstance().addNewScope(tokens.prevText());
         if (!check(OpenBrace)) return false;
         if (!handleClassStatements()) return false;
         if (!check(CloseBrace)) return false;
@@ -123,7 +123,7 @@ public class Parser {
         if (!check(CloseParenthesis)) {
             List<Variable> args = handleArguments();
             if (args == null) return false;
-            VariableTable.getInstance().addScope(name);
+            VariableTable.getInstance().addNewScope(name);
             VariableTable.getInstance().addToScope(args);
             VariableTable.getInstance().addMethod(new Method(fromTokenType(returnType), name, args));
             if (!check(CloseParenthesis)) return false;

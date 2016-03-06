@@ -1,15 +1,17 @@
 package Grammar;
 
-import classes.Token;
+import classes.Expression;
+import classes.Variable;
 
 import static classes.Token.Type.*;
 
 /**
  * Created by Josh on 4/03/2016.
  */
-public class GrammarComparison extends GrammarRule<Token> {
+public class GrammarComparison extends GrammarRule<Expression> {
     @Override
-    public Token parseGrammar() throws GrammarException {
-        return required(BooleanAnd, BooleanOr, BooleanEquals, BooleanNotEquals);
+    public Expression parseGrammar() throws GrammarException {
+        required(BooleanAnd, BooleanOr, BooleanEquals, BooleanNotEquals);
+        return new Expression(Expression.Type.Expression, Variable.VarType.Boolean);
     }
 }

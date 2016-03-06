@@ -18,9 +18,7 @@ public class GrammarClassDefinition extends GrammarRule<Boolean> {
 
     @Override
     public Boolean parseGrammar() throws GrammarException {
-        int from = tokens.getIndex();
-        if (notNull(optional(new GrammarClassVariable()))) return true;
-        reset(from);
+        while (notNull(optional(new GrammarClassVariable()))) return true;
         return required(new GrammarClassMethod());
     }
 
@@ -33,6 +31,7 @@ public class GrammarClassDefinition extends GrammarRule<Boolean> {
             else if (optional(KeywordPublic)) modifier = Variable.Modifier.Public;
             boolean isStatic = optional(KeywordStatic);
             required(new GrammarVariableDefinition(modifier, isStatic));
+            required(Semicolon);
             return true;
         }
     }
@@ -46,14 +45,15 @@ public class GrammarClassDefinition extends GrammarRule<Boolean> {
             required(OpenParenthesis);
             if (!optional(CloseParenthesis)) {
                 List<Variable> args = required(GrammarArguments.class);
-                if (args == null) return false;
-                VariableTable.getInstance().addScope(name);
+                if (args == null) except("Could not retrieve parameters for method '" + name + "'", true);
+                VariableTable.getInstance().addNewScope(name);
                 VariableTable.getInstance().addToScope(args);
                 VariableTable.getInstance().addMethod(new Method(fromTokenType(token.getType()), name, args));
                 required(CloseParenthesis);
             }
             required(OpenBrace);
-            required(GrammarMethodStatements.class);
+            required(new GrammarStatement(null));
+            while (notNull(optional(new GrammarStatement(null))));
             required(CloseBrace);
             return true;
         }

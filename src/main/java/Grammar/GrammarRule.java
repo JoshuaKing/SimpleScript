@@ -32,13 +32,15 @@ public abstract class GrammarRule<T> {
         return value;
     }
 
-    <R, T extends GrammarRule<R>> R optional(T grammar) throws GrammarException {
-        try {
-            return required(grammar);
-        } catch (GrammarException e) {
-            if (e.fatal) throw e;
-            return null;
+    <R, T extends GrammarRule<R>> R optional(T... grammars) throws GrammarException {
+        for (T grammar : grammars) {
+            try {
+                return required(grammar);
+            } catch (GrammarException e) {
+                if (e.fatal) throw e;
+            }
         }
+        return null;
     }
 
     <R, T extends GrammarRule<R>> R required(Class<T>... grammarRules) throws GrammarException {
@@ -60,9 +62,23 @@ public abstract class GrammarRule<T> {
         return null;
     }
 
-    <T> T optional(Class<? extends GrammarRule<T>> grammarRule) throws GrammarException {
+    <R, T extends GrammarRule<R>> R required(T... grammarRules) throws GrammarException {
+        GrammarException lastError = null;
+        for (T grammarRule : grammarRules) {
+            try {
+                return required(grammarRule);
+            } catch (GrammarException e) {
+                // Catch last error to display
+                lastError = e;
+            }
+        }
+        except(lastError.getMessage(), lastError.fatal);
+        return null;
+    }
+
+    <R, T extends GrammarRule<R>> R optional(Class<T>... grammarRules) throws GrammarException {
         try {
-            return required(grammarRule);
+            return required(grammarRules);
         } catch (GrammarException e) {
             if (e.fatal) throw e;
             return null;

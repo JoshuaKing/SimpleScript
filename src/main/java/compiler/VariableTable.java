@@ -45,7 +45,7 @@ public class VariableTable {
         return instance;
     }
 
-    public VariableTable addScope(String scope) {
+    public VariableTable addNewScope(String scope) {
         variables.putIfAbsent(scope, new VariableTable(this, scope));
         instance = (VariableTable) variables.get(scope);
         return instance;

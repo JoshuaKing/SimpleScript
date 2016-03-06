@@ -18,7 +18,6 @@ public class GrammarMethodParameters extends GrammarRule<Boolean> {
 
     @Override
     public Boolean parseGrammar() throws GrammarException {
-
         for (int i = 0; i < parameters.size(); i++) {
             Variable parameter = parameters.get(i);
             Expression expression = required(new GrammarExpression(parameter.getType()));

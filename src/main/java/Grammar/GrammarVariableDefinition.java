@@ -23,15 +23,10 @@ public class GrammarVariableDefinition extends GrammarRule<Boolean> {
         Token token = required(GrammarVariableTypes.class);
         String name = required(GrammarName.class);
         Variable variable = new Variable(modifier, isStatic, name, token.getType());
-
-        if (optional(Semicolon)) {
-            VariableTable.getInstance().addToScope(variable);
-            return true;
-        }
-        required(new GrammarAssignment(variable.getVarType()));
-        variable.setValue(tokens.prevText());
         VariableTable.getInstance().addToScope(variable);
-        required(Semicolon);
+
+        if (optional(OperatorEquals)) required(new GrammarExpression(variable.getVarType()));
+
         return true;
     }
 }

@@ -14,7 +14,7 @@ public class GrammarClass extends GrammarRule<Boolean> {
     public Boolean parseGrammar() throws GrammarException {
         required(KeywordClass);
         String name = required(GrammarName.class);
-        ensure(VariableTable.getInstance().addScope(name));
+        ensure(VariableTable.getInstance().addNewScope(name));
 
         required(OpenBrace);
         repeatable(GrammarClassDefinition.class);

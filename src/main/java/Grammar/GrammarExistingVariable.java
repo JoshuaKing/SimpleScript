@@ -9,15 +9,15 @@ import compiler.VariableTable;
  */
 public class GrammarExistingVariable extends GrammarRule<Expression> {
     private final Variable.VarType type;
+    private String name;
 
-    public GrammarExistingVariable(Variable.VarType type) {
+    public GrammarExistingVariable(Variable.VarType type, String name) {
         this.type = type;
+        this.name = name;
     }
 
     @Override
     public Expression parseGrammar() throws GrammarException {
-        String name = required(GrammarName.class);
-
         Variable variable = VariableTable.getInstance().get(name);
         if (notNull(variable)) {
             System.out.println(name + " is currently " + variable.getValue());
@@ -26,6 +26,8 @@ public class GrammarExistingVariable extends GrammarRule<Expression> {
             return null;
         }
 
+        if (!type.equals(variable.getType())) except("Expected variable '" + name + "' to be type '"
+                + type.name() + "' but was '" + variable.getType().name() + "'", true);
         return new Expression(Expression.Type.Expression, variable.getType());
     }
 }
