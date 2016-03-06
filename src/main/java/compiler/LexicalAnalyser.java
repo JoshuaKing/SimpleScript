@@ -12,9 +12,33 @@ import java.util.stream.Collectors;
  * Created by josking on 3/2/16.
  */
 public class LexicalAnalyser {
+    private enum RegexExp {
+        LineComment("//.*"),
+        String("([\"']).*?\\1"),
+        MultiLineComment("/[*][\\d\\D]*?[*]/"),
+        Float("\\d+\\.\\d+"),
+        SpecialAssign("[+*/!-]="),
+        SingleAndDoubleCharacters("([|&*=+-])\\2?"),
+        KeyCharacters("[.(){}\\[\\];></%!:^]"),
+        Whitespace("\\s+");
+
+        String pattern;
+
+        RegexExp(String pattern) {
+            this.pattern = pattern;
+        }
+    }
+
     public static List<Token> tokenize(String file) {
         List<Token> tokens = new ArrayList<>();
-        Pattern p = Pattern.compile("//.*|([\"']).*?\\1|/[*][\\d\\D]*?[*]/|\\d+\\.\\d+|[.(){}\\[\\];></%!:^]|[+*/!-]=|([|&*=+-])\\1?|\\s+");
+        String pattern = "";
+
+        for (RegexExp p : RegexExp.values()) {
+            pattern += p.pattern + "|";
+        }
+        pattern = pattern.substring(0, pattern.length() - 1);
+        System.out.println("REGEX: " + pattern);
+        Pattern p = Pattern.compile(pattern);
 
         String[] lines = file.split("(?=\\r?\\n)");
         for (int r = 0; r < lines.length; r++) {

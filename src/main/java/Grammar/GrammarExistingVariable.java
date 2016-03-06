@@ -26,7 +26,7 @@ public class GrammarExistingVariable extends GrammarRule<Expression> {
             return null;
         }
 
-        if (!type.equals(variable.getType())) except("Expected variable '" + name + "' to be type '"
+        if (notNull(type) && !type.equals(variable.getType())) except("Expected variable '" + name + "' to be type '"
                 + type.name() + "' but was '" + variable.getType().name() + "'", true);
         return new Expression(Expression.Type.Expression, variable.getType());
     }

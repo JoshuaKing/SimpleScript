@@ -152,6 +152,10 @@ public abstract class GrammarRule<T> {
         return tokens.check(type);
     }
 
+    protected boolean is(classes.Token.Type type) {
+        return tokens.getType().equals(type);
+    }
+
     protected void ensure(boolean value) throws GrammarException {
         if (!value) except("Failed boolean test.", false);
     }
