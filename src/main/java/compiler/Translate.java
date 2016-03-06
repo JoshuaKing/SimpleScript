@@ -22,10 +22,6 @@ public class Translate {
         for (Token t : tokens) {
             System.out.println(t.getType().name() + " : " + t.getText());
         }
-        /*Parser tree = new Parser(tokens);
-        for (Token t : tree.getTree()) {
-            System.out.println(t.getType().name() + " = " + t.getText());
-        }*/
 
         GrammarRule file = new GrammarFile();
         TokenIterator tokenIterator = new TokenIterator(tokens);
@@ -38,6 +34,9 @@ public class Translate {
             throw e;
         }
         System.out.println("Grammar =\n" + file.toString());
+
+        String output = JavascriptGenerator.parseGrammar(file);
+        System.out.println("Javascript =\n" + output);
     }
 
     private static void display(String file, int lineNumber, int columnNumber) {

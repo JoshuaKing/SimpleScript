@@ -1,6 +1,5 @@
 package Grammar;
 
-import classes.DebugException;
 import classes.Token;
 import handler.TokenIterator;
 
@@ -13,10 +12,19 @@ import java.util.List;
  */
 public abstract class GrammarRule<T> {
     private List<GrammarRule<?>> grammars = new ArrayList<>();
+    private List<Object> syntaxTree = new ArrayList<>();
     protected TokenIterator tokens;
 
     public void setTokens(TokenIterator tokens) {
         this.tokens = tokens;
+    }
+
+    public List<GrammarRule<?>> getGrammarTree() {
+        return grammars;
+    }
+
+    public List<Object> getSyntaxTree() {
+        return syntaxTree;
     }
 
     public void GrammarRule() {
@@ -29,6 +37,7 @@ public abstract class GrammarRule<T> {
         grammar.setTokens(tokens);
         R value = grammar.parseGrammar();
         grammars.add(grammar);
+        syntaxTree.add(grammar);
         return value;
     }
 
@@ -85,31 +94,10 @@ public abstract class GrammarRule<T> {
         }
     }
 
-    <R, T extends GrammarRule<R>> R test(T... grammars) throws DebugException {
-        DebugException exception = new DebugException(null, 0, null);
-        for (T grammar : grammars) {
-            int repeat = tokens.getIndex();
-            try {
-                System.out.println("Testing Rule " + grammar.getClass().getSimpleName());
-                R value = required(grammar);
-                if (notNull(value)) return value;
-            } catch (GrammarException e) {
-                exception = exception.adjust(e, tokens.getIndex(), tokens.prev());
-                System.out.println("Test Rule " + grammar.getClass().getSimpleName() + " failed: " + exception.getError().getMessage());
-                reset(repeat);
-            }
-        }
-        throw exception;
-    }
-
     public T repeatable(Class<? extends GrammarRule<T>> grammarRule) throws GrammarException {
         T value = required(grammarRule);
         while ((value = optional(grammarRule)) != null);
         return value;
-    }
-
-    public void reset(int to) {
-        tokens.setIndex(to);
     }
 
     private String toString(int level) {
@@ -133,13 +121,10 @@ public abstract class GrammarRule<T> {
         throw new GrammarException(error, fatal);
     }
 
-    protected static void except(DebugException error) throws GrammarException {
-        throw error.getError();
-    }
-
     protected Token required(classes.Token.Type... types) throws GrammarException {
         for (classes.Token.Type type : types) {
             if (tokens.check(type)) {
+                syntaxTree.add(tokens.prev());
                 return tokens.prev();
             }
         }
@@ -148,8 +133,13 @@ public abstract class GrammarRule<T> {
         return null;
     }
 
-    protected boolean optional(classes.Token.Type type) {
-        return tokens.check(type);
+    protected boolean optional(classes.Token.Type... types) throws GrammarException {
+        try {
+            return notNull(required(types));
+        } catch (GrammarException e) {
+            if (e.fatal) throw e;
+            return false;
+        }
     }
 
     protected boolean is(classes.Token.Type type) {
