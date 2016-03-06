@@ -22,7 +22,7 @@ public class GrammarExistingVariable extends GrammarRule<Expression> {
         if (notNull(variable)) {
             System.out.println(name + " is currently " + variable.getValue());
         } else {
-            System.err.println(name + " does not exist. ");
+            System.out.println("variable " + name + " does not exist. ");
             return null;
         }
 

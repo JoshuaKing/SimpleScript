@@ -1,8 +1,8 @@
 package Grammar;
 
-import classes.DebugException;
 import classes.Expression;
 import classes.Variable;
+import compiler.VariableTable;
 
 /**
  * Created by Josh on 4/03/2016.
@@ -17,25 +17,18 @@ public class GrammarStatement extends GrammarRule<Expression> {
     @Override
     // MethodCall | NewInstance | { Constant, Variable } [SoloOp]
     public Expression parseGrammar() throws GrammarException {
-        DebugException error = null;
-        try {
-            Expression expression = test(new GrammarMethodCall(type));
-            if (notNull(expression)) return expression;
-        } catch (DebugException e) {
-            error = e;
-            System.out.println("NEW ERROR: " + error.getError().getMessage());
+        Expression expression = optional(new GrammarConstant(type));
+        if (notNull(expression)) return optional(new GrammarSoloOperator(type));
+
+        int repeat = tokens.getIndex();
+        String name = required(GrammarName.class);
+        reset(repeat);
+
+        if (notNull(VariableTable.getInstance().get(name))) {
+            return required(new GrammarExistingVariable(type));
+        } else {
+            return required(new GrammarMethodCall(type));
         }
-        try {
-            Expression expression = test(new GrammarConstant(type), new GrammarExistingVariable(type));
-            if (!notNull(expression)) return null;
-            optional(new GrammarSoloOperator(type));
-            return expression;
-        } catch (DebugException e) {
-            error = e.adjust(error);
-            System.out.println("NEW ERROR: " + error.getError().getMessage());
-        }
-        except(error);
-        return null;
     }
 
     private boolean isComparison() throws GrammarException {

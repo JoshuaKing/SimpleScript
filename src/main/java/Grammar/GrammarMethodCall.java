@@ -25,7 +25,7 @@ public class GrammarMethodCall extends GrammarRule<Expression> {
         Method method = ensure(VariableTable.getInstance().getMethod(name));
         if (notNull(expectedReturnType) && !expectedReturnType.equals(method.getReturnType())) {
             except("Expecting method " + method.getName() + " to return '" + expectedReturnType.name()
-                    + "' but returns type '" + method.getReturnType().name() + "'");
+                    + "' but returns type '" + method.getReturnType().name() + "'", true);
         }
         System.out.println("Method call to " + method.getName());
         required(new GrammarMethodParameters(method.getArguments()));

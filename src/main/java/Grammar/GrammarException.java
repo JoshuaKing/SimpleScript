@@ -4,7 +4,11 @@ package Grammar;
  * Created by Josh on 3/03/2016.
  */
 public class GrammarException extends Exception {
-    public GrammarException(String err) {
+    boolean fatal = false;
+
+    public GrammarException(String err, boolean fatal) {
         super(err);
+
+        this.fatal = fatal;
     }
 }
