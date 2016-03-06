@@ -11,7 +11,7 @@ import static classes.Token.Type.*;
 public class GrammarComparison extends GrammarRule<Expression> {
     @Override
     public Expression parseGrammar() throws GrammarException {
-        required(BooleanAnd, BooleanOr, BooleanEquals, BooleanNotEquals);
+        required(BooleanAnd, BooleanOr, BooleanEquals, BooleanNotEquals, LessThan, GreaterThan);
         return new Expression(Expression.Type.Expression, Variable.VarType.Boolean);
     }
 }

@@ -10,7 +10,7 @@ class MyClass {
         x(y);
         x(1 + x.y.z.MyClass.a);
         if (a ==b) {
-            return a < 20.2 if b >20.2;
+            return a < 20.2;
         }
     }
 }

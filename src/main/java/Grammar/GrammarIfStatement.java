@@ -19,9 +19,11 @@ public class GrammarIfStatement extends GrammarRule<Expression> {
 
         required(Token.Type.OpenBrace);
 
-        Expression expression;
+        Expression expression = optional(new GrammarStatement(null));
 
-        while (notNull(expression = optional(new GrammarStatement(null))));
+        while (notNull(expression)) {
+            expression = optional(new GrammarStatement(null));
+        }
 
         required(Token.Type.CloseBrace);
 

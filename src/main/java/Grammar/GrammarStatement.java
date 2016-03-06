@@ -18,6 +18,11 @@ public class GrammarStatement extends GrammarRule<Expression> {
     // MethodCall | NewInstance | { Constant, Variable } [SoloOp]
     public Expression parseGrammar() throws GrammarException {
         if (is(Token.Type.KeywordIf)) return required(GrammarIfStatement.class);
+        if (optional(Token.Type.KeywordReturn)) {
+            Expression expression = required(new GrammarExpression(type));
+            required(Token.Type.Semicolon);
+            return expression;
+        }
 
         Expression expression = required(new GrammarExpression(type));
         required(Token.Type.Semicolon);
