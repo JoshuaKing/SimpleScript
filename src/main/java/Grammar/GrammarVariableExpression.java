@@ -4,7 +4,7 @@ import classes.Expression;
 import classes.Method;
 import classes.Token;
 import classes.Variable;
-import compiler.VariableTable;
+import compiler.SymbolTable;
 
 import static classes.Token.Type.CloseParenthesis;
 
@@ -29,7 +29,7 @@ public class GrammarVariableExpression extends GrammarRule<Expression> {
         if (notNull(expression)) return required(new GrammarExpression(type));
 
         if (optional(Token.Type.OpenParenthesis)) {
-            Method method = ensure(VariableTable.getInstance().getMethod(name));
+            Method method = ensure(SymbolTable.getInstance().getMethod(name));
             if (notNull(type) && !type.equals(method.getReturnType())) {
                 except("Expecting method " + method.getName() + " to return '" + type.name()
                         + "' but returns type '" + method.getReturnType().name() + "'", true);

@@ -1,6 +1,6 @@
 package Grammar;
 
-import compiler.VariableTable;
+import compiler.SymbolTable;
 
 import static classes.Token.Type.KeywordImport;
 
@@ -11,7 +11,7 @@ public class GrammarImport extends GrammarRule<Boolean> {
     @Override
     public Boolean parseGrammar() throws GrammarException {
         required(KeywordImport);
-        ensure(VariableTable.importPackage(required(GrammarName.class)));
+        ensure(SymbolTable.importPackage(required(GrammarName.class)));
         return true;
     }
 }

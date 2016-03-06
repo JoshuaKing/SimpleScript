@@ -2,7 +2,7 @@ package Grammar;
 
 import classes.Expression;
 import classes.Variable;
-import compiler.VariableTable;
+import compiler.SymbolTable;
 
 /**
  * Created by josking on 3/4/16.
@@ -18,7 +18,7 @@ public class GrammarExistingVariable extends GrammarRule<Expression> {
 
     @Override
     public Expression parseGrammar() throws GrammarException {
-        Variable variable = VariableTable.getInstance().get(name);
+        Variable variable = SymbolTable.getInstance().get(name);
         if (notNull(variable)) {
             System.out.println(name + " is currently " + variable.getValue());
         } else {

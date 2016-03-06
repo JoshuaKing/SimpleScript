@@ -14,6 +14,7 @@ public abstract class GrammarRule<T> {
     private List<GrammarRule<?>> grammars = new ArrayList<>();
     private List<Object> syntaxTree = new ArrayList<>();
     protected TokenIterator tokens;
+    private int nextGrammar = 0;
 
     public void setTokens(TokenIterator tokens) {
         this.tokens = tokens;
@@ -31,6 +32,29 @@ public abstract class GrammarRule<T> {
     }
 
     public abstract T parseGrammar() throws GrammarException;
+
+    public String getJavascript(int indentation) {
+        String javascript = "";
+        for (Object o : getSyntaxTree()) {
+            if (o.getClass().isAssignableFrom(Token.class)) {
+                javascript += ((Token) o).getText();
+            } else {
+                javascript += ((GrammarRule) o).getJavascript(indentation + 1);
+            }
+        }
+        return javascript;
+    }
+
+    public String indent(int indent, String text) {
+        String[] lines = text.split("\\n");
+        StringBuilder content = new StringBuilder();
+        String tab = "";
+        for (int i = 0; i < indent; i++) tab += "    ";
+        for (String line : lines) {
+            content.append(tab).append(line).append('\n');
+        }
+        return content.toString();
+    }
 
 
     <R, T extends GrammarRule<R>> R required(T grammar) throws GrammarException {
@@ -157,5 +181,9 @@ public abstract class GrammarRule<T> {
 
     protected <T> boolean notNull(T obj) {
         return obj != null;
+    }
+
+    public GrammarRule nextGrammar() {
+        return grammars.get(nextGrammar++);
     }
 }

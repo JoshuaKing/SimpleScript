@@ -2,7 +2,7 @@ package Grammar;
 
 import classes.Token;
 import classes.Variable;
-import compiler.VariableTable;
+import compiler.SymbolTable;
 
 import static classes.Token.Type.*;
 
@@ -23,7 +23,7 @@ public class GrammarVariableDefinition extends GrammarRule<Boolean> {
         Token token = required(GrammarVariableTypes.class);
         String name = required(GrammarName.class);
         Variable variable = new Variable(modifier, isStatic, name, token.getType());
-        VariableTable.getInstance().addToScope(variable);
+        SymbolTable.getInstance().addToScope(variable);
 
         if (optional(OperatorEquals)) required(new GrammarExpression(variable.getVarType()));
 

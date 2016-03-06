@@ -3,7 +3,7 @@ package Grammar;
 import classes.Method;
 import classes.Token;
 import classes.Variable;
-import compiler.VariableTable;
+import compiler.SymbolTable;
 
 import java.util.List;
 
@@ -46,9 +46,9 @@ public class GrammarClassDefinition extends GrammarRule<Boolean> {
             if (!optional(CloseParenthesis)) {
                 List<Variable> args = required(GrammarArguments.class);
                 if (args == null) except("Could not retrieve parameters for method '" + name + "'", true);
-                VariableTable.getInstance().addNewScope(name);
-                VariableTable.getInstance().addToScope(args);
-                VariableTable.getInstance().addMethod(new Method(fromTokenType(token.getType()), name, args));
+                SymbolTable.getInstance().addNewScope(name);
+                SymbolTable.getInstance().addToScope(args);
+                SymbolTable.getInstance().addMethod(new Method(fromTokenType(token.getType()), name, args));
                 required(CloseParenthesis);
             }
             required(OpenBrace);

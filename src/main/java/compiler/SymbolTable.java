@@ -10,23 +10,23 @@ import java.util.Map;
 /**
  * Created by josking on 3/2/16.
  */
-public class VariableTable {
+public class SymbolTable {
     public static final String METHOD_KEY = "_Method";
-    private static VariableTable root = new VariableTable(null, "");
+    private static SymbolTable root = new SymbolTable(null, "");
 
-    private static VariableTable instance = root;
-    private VariableTable parent;
+    private static SymbolTable instance = root;
+    private SymbolTable parent;
     private String parentKey;
     private Map<String, Object> variables = new HashMap<>();
 
-    VariableTable(VariableTable parent, String parentKey) {
+    SymbolTable(SymbolTable parent, String parentKey) {
         this.parent = parent;
         this.parentKey = parentKey;
     }
 
     public void addToScope(Variable variable) {
         variables.put(variable.getName(), variable);
-        VariableTable inst = instance;
+        SymbolTable inst = instance;
         System.out.println("Adding " + variable.getName() + " = " + variable.getValue() + " to...");
         while (inst != null) {
             System.out.println("-> " + inst.parentKey);
@@ -34,20 +34,20 @@ public class VariableTable {
         }
     }
 
-    public static VariableTable addPackage(String pkg) {
-        VariableTable add = getRoot();
+    public static SymbolTable addPackage(String pkg) {
+        SymbolTable add = getRoot();
         String[] pkgs = pkg.split("\\.");
         for (String p : pkgs) {
-            add.variables.putIfAbsent(p, new VariableTable(add, p));
-            add = (VariableTable) add.variables.get(p);
+            add.variables.putIfAbsent(p, new SymbolTable(add, p));
+            add = (SymbolTable) add.variables.get(p);
         }
         instance = add;
         return instance;
     }
 
-    public VariableTable addNewScope(String scope) {
-        variables.putIfAbsent(scope, new VariableTable(this, scope));
-        instance = (VariableTable) variables.get(scope);
+    public SymbolTable addNewScope(String scope) {
+        variables.putIfAbsent(scope, new SymbolTable(this, scope));
+        instance = (SymbolTable) variables.get(scope);
         return instance;
     }
 
@@ -55,7 +55,7 @@ public class VariableTable {
         String[] pkgs = pkg.split("\\.");
         Map<String, Object> findPackage = getRoot().variables;
         for (String p : pkgs) {
-            if (findPackage.get(p) != null && findPackage.get(p).getClass().equals(VariableTable.class)) {
+            if (findPackage.get(p) != null && findPackage.get(p).getClass().equals(SymbolTable.class)) {
                 findPackage = (Map<String, Object>) findPackage.get(p);
             } else {
                 System.err.println("Package " + pkg + " not available for import (not found).");
@@ -69,18 +69,18 @@ public class VariableTable {
         return true;
     }
 
-    private static VariableTable getRoot() {
+    private static SymbolTable getRoot() {
         return root;
     }
 
-    public static VariableTable getInstance() {
+    public static SymbolTable getInstance() {
         return instance;
     }
 
     public Variable get(String variable) {
         // Bottom Up with no path
         if (!variable.contains(".")) {
-            VariableTable instance = this;
+            SymbolTable instance = this;
             while (instance != null) {
                 Object var = instance.variables.get(variable);
                 if (var != null && var.getClass().equals(Variable.class)) return (Variable) var;
@@ -89,14 +89,14 @@ public class VariableTable {
         }
 
         // Top Down w/Path
-        VariableTable instance = getRoot();
+        SymbolTable instance = getRoot();
         for (String part : variable.split("\\.")) {
             Object obj = instance.variables.get(part);
             if (obj != null) {
                 if (obj.getClass().equals(Variable.class)) {
                     return (Variable) obj;
                 } else {
-                    instance = (VariableTable) obj;
+                    instance = (SymbolTable) obj;
                 }
             }
         }
@@ -105,7 +105,7 @@ public class VariableTable {
 
     public Method getMethod(String method) {
         // Bottom Up w/Path
-        VariableTable instance = this.getParent();
+        SymbolTable instance = this.getParent();
         Object obj = null;
         String methodId = method + '.' + METHOD_KEY;
         for (String part : methodId.split("\\.")) {
@@ -122,13 +122,13 @@ public class VariableTable {
             if (obj.getClass().equals(Method.class)) {
                 return (Method) obj;
             } else {
-                instance = (VariableTable) obj;
+                instance = (SymbolTable) obj;
             }
         }
         return null;
     }
 
-    public VariableTable getParent() {
+    public SymbolTable getParent() {
         return parent;
     }
 
@@ -140,7 +140,7 @@ public class VariableTable {
 
     public void addMethod(Method method) {
         variables.put(METHOD_KEY, method);
-        VariableTable inst = instance;
+        SymbolTable inst = instance;
         System.out.println("Adding " + METHOD_KEY + " to...");
         while (inst != null) {
             System.out.println("-> " + inst.parentKey);

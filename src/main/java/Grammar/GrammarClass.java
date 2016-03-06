@@ -1,6 +1,6 @@
 package Grammar;
 
-import compiler.VariableTable;
+import compiler.SymbolTable;
 
 import static classes.Token.Type.CloseBrace;
 import static classes.Token.Type.KeywordClass;
@@ -14,7 +14,7 @@ public class GrammarClass extends GrammarRule<Boolean> {
     public Boolean parseGrammar() throws GrammarException {
         required(KeywordClass);
         String name = required(GrammarName.class);
-        ensure(VariableTable.getInstance().addNewScope(name));
+        ensure(SymbolTable.getInstance().addNewScope(name));
 
         required(OpenBrace);
         repeatable(GrammarClassDefinition.class);

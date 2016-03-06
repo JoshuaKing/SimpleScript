@@ -37,6 +37,7 @@ public class Translate {
 
         String output = JavascriptGenerator.parseGrammar(file);
         System.out.println("Javascript =\n" + output);
+        System.out.println("Javascript2 =\n" + file.getJavascript(0));
     }
 
     private static void display(String file, int lineNumber, int columnNumber) {
