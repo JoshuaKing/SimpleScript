@@ -117,4 +117,9 @@ public class Token {
     public String getText() {
         return text;
     }
+
+    @Override
+    public String toString() {
+        return getText();
+    }
 }

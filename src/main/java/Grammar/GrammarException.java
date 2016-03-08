@@ -11,4 +11,8 @@ public class GrammarException extends Exception {
 
         this.fatal = fatal;
     }
+
+    public GrammarException(String err) {
+        super(err);
+    }
 }

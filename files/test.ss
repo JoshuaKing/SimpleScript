@@ -9,7 +9,7 @@ class MyClass {
     void x(int b, boolean c) {
         x(y);
         x(1 + x.y.z.MyClass.a);
-        if (a ==b) {
+        if (a ==b || 2 ** 3) {
             return a < 20.2;
         }
     }

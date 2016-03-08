@@ -1,12 +1,7 @@
 package compiler;
 
-import Grammar.GrammarException;
-import Grammar.GrammarFile;
-import Grammar.GrammarRegex;
-import Grammar.GrammarRule;
-import Syntax.SyntaxElement;
+import Syntax.*;
 import classes.Token;
-import handler.TokenIterator;
 import org.apache.commons.io.IOUtils;
 
 import java.io.FileReader;
@@ -27,10 +22,12 @@ public class Translate {
         }
         System.out.println(reformatted.toString());
 
-        SyntaxElement element = GrammarRegex.parse(reformatted.toString());
-        System.out.println(element.traverse());
+        SyntaxElement syntaxTree = SyntaxBuilder.build(tokens);
+        System.out.println(syntaxTree.toString());
+        Verify.verify(syntaxTree, "test.ss");
+        System.out.println(Syntax.SymbolTable.dump());
 
-        GrammarRule file = new GrammarFile();
+        /*GrammarRule file = new GrammarFile();
         TokenIterator tokenIterator = new TokenIterator(tokens);
         file.setTokens(tokenIterator);
         try {
@@ -41,10 +38,7 @@ public class Translate {
             throw e;
         }
         System.out.println("Grammar =\n" + file.toString());
-
-        String output = JavascriptGenerator.parseGrammar(file);
-        System.out.println("Javascript =\n" + output);
-        System.out.println("Javascript2 =\n" + file.getJavascript());
+        System.out.println("Javascript =\n" + file.getJavascript());*/
     }
 
     private static void display(String file, int lineNumber, int columnNumber) {
