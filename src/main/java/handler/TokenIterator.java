@@ -62,6 +62,6 @@ public class TokenIterator {
     }
 
     public void increment() {
-        index++;
+        if (index < tokens.size() - 1) index++;
     }
 }

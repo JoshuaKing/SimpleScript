@@ -25,4 +25,14 @@ public class GrammarArguments extends GrammarRule<List<Variable>> {
         }
         return list;
     }
+
+    @Override
+    public String getJavascript() {
+        String javascript = "";
+        while (hasNextGrammar()) {
+            javascript += nextGrammar() + " " + nextGrammar();
+            javascript += hasNextGrammar() ? ", " : "";
+        }
+        return javascript;
+    }
 }

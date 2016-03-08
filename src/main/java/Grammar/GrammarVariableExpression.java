@@ -25,7 +25,7 @@ public class GrammarVariableExpression extends GrammarRule<Expression> {
         Expression expression = optional(new GrammarSoloOperator(type));
         if (notNull(expression)) return expression;
 
-        expression = optional(new GrammarComparison(), new GrammarDualOperator(type));
+        expression = optional(new GrammarComparison(type), new GrammarDualOperator(type));
         if (notNull(expression)) return required(new GrammarExpression(type));
 
         if (optional(Token.Type.OpenParenthesis)) {

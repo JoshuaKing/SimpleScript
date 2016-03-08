@@ -28,4 +28,17 @@ public class GrammarStatement extends GrammarRule<Expression> {
         required(Token.Type.Semicolon);
         return expression;
     }
+
+    @Override
+    public String getJavascript() {
+        String javascript = "";
+        for (Object o : getSyntaxTree()) {
+            if (o.getClass().isAssignableFrom(Token.class)) {
+                javascript += ((Token) o).getText() + " ";
+            } else {
+                javascript += ((GrammarRule) o).getJavascript();
+            }
+        }
+        return javascript;
+    }
 }

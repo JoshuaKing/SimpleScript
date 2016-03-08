@@ -19,7 +19,7 @@ public class LexicalAnalyser {
         Float("\\d+\\.\\d+"),
         SpecialAssign("[+*/!-]="),
         SingleAndDoubleCharacters("([|&*=+-])\\2?"),
-        KeyCharacters("[.(){}\\[\\];></%!:^]"),
+        KeyCharacters("[\\(\\)\\{\\}\\[\\];></%!:,\\^]"),
         Whitespace("\\s+");
 
         String pattern;

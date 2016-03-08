@@ -34,6 +34,15 @@ public class GrammarClassDefinition extends GrammarRule<Boolean> {
             required(Semicolon);
             return true;
         }
+
+        @Override
+        public String getJavascript() {
+            String javascript = "";
+            while (hasNextGrammar()) {
+                javascript += indent(nextGrammar());
+            }
+            return javascript;
+        }
     }
 
     public class GrammarClassMethod extends GrammarRule<Boolean> {
@@ -56,6 +65,16 @@ public class GrammarClassDefinition extends GrammarRule<Boolean> {
             while (notNull(optional(new GrammarStatement(null))));
             required(CloseBrace);
             return true;
+        }
+
+        @Override
+        public String getJavascript() {
+            nextGrammar();
+            String javascript = indent("var " + nextGrammar() + " = function(" + nextGrammar() + ") {");
+            while (hasNextGrammar()) {
+                javascript += indent(indent(nextGrammar()));    // Double indent for inner method
+            }
+            return javascript + indent("}");
         }
     }
 }

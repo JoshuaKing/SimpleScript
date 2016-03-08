@@ -30,4 +30,14 @@ public class GrammarMethodParameters extends GrammarRule<Boolean> {
         }
         return true;
     }
+
+    @Override
+    public String getJavascript() {
+        String javascript = "";
+        while (hasNextGrammar()) {
+            javascript += nextGrammar();
+            javascript += hasNextGrammar() ? ", " : "";
+        }
+        return javascript;
+    }
 }

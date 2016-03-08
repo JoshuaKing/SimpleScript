@@ -29,4 +29,9 @@ public class GrammarVariableDefinition extends GrammarRule<Boolean> {
 
         return true;
     }
+
+    @Override
+    public String getJavascript() {
+        return nextGrammar() + " " + nextGrammar() + " = " + nextGrammar() + ";\n";
+    }
 }

@@ -12,11 +12,14 @@ public class GrammarPackage extends GrammarRule<SymbolTable> {
     @Override
     public SymbolTable parseGrammar() throws GrammarException {
         required(KeywordPackage);
-        return SymbolTable.addPackage(required(GrammarName.class));
+        SymbolTable table = SymbolTable.addPackage(required(GrammarName.class));
+        optional(GrammarImport.class);
+        required(GrammarClass.class);
+        return table;
     }
 
     @Override
-    public String getJavascript(int indent) {
-        return indent(indent, "var " + nextGrammar().getJavascript(0) + " = {\n" + nextGrammar().getJavascript(indent + 1) + "}");
+    public String getJavascript() {
+        return indent("var _PACKAGE['" + nextGrammar() + "'] = {") + indent(nextGrammar()) + indent("}");
     }
 }

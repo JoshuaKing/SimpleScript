@@ -13,7 +13,6 @@ public class Token {
         CloseParenthesis(")"),
         OpenBracket("("),
         CloseBracket(")"),
-        Dot("."),
         Comma(","),
         Colon(":"),
         Semicolon(";"),
@@ -63,7 +62,8 @@ public class Token {
         BitwiseAnd("&"),
         BitwiseNot("~"),
         BitwiseXor("^"),
-        Name("[a-zA-Z][a-zA-Z0-9]*", true),
+        Name("[a-zA-Z][a-zA-Z0-9.]*", true),
+        Dot("."),
         LineComment("//.*", true),
         MultiLineComment("/[*]([\\d\\D]*)[*]/", true),
         Unknown(".*", true)

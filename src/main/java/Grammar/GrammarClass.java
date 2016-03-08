@@ -21,4 +21,12 @@ public class GrammarClass extends GrammarRule<Boolean> {
         required(CloseBrace);
         return true;
     }
+
+    @Override
+    public String getJavascript() {
+        String javascript = indent("var " + nextGrammar() + " = class {\n");
+        while (hasNextGrammar()) javascript += indent(nextGrammar());
+        javascript += indent("}\n");
+        return javascript;
+    }
 }

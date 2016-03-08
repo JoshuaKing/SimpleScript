@@ -33,23 +33,22 @@ public abstract class GrammarRule<T> {
 
     public abstract T parseGrammar() throws GrammarException;
 
-    public String getJavascript(int indentation) {
+    public String getJavascript() {
         String javascript = "";
         for (Object o : getSyntaxTree()) {
             if (o.getClass().isAssignableFrom(Token.class)) {
                 javascript += ((Token) o).getText();
             } else {
-                javascript += ((GrammarRule) o).getJavascript(indentation + 1);
+                javascript += ((GrammarRule) o).getJavascript();
             }
         }
         return javascript;
     }
 
-    public String indent(int indent, String text) {
+    public String indent(String text) {
         String[] lines = text.split("\\n");
         StringBuilder content = new StringBuilder();
-        String tab = "";
-        for (int i = 0; i < indent; i++) tab += "    ";
+        String tab = "    ";
         for (String line : lines) {
             content.append(tab).append(line).append('\n');
         }
@@ -183,7 +182,12 @@ public abstract class GrammarRule<T> {
         return obj != null;
     }
 
-    public GrammarRule nextGrammar() {
-        return grammars.get(nextGrammar++);
+    public String nextGrammar() {
+        if (nextGrammar >= grammars.size()) return null;
+        return grammars.get(nextGrammar++).getJavascript();
+    }
+
+    public boolean hasNextGrammar() {
+        return (nextGrammar < grammars.size());
     }
 }

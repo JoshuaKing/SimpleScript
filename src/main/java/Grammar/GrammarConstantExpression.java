@@ -20,9 +20,15 @@ public class GrammarConstantExpression extends GrammarRule<Expression> {
         Expression expression = optional(new GrammarSoloOperator(type));
         if (notNull(expression)) return expression;
 
-        expression = optional(new GrammarComparison(), new GrammarDualOperator(type));
+        expression = optional(new GrammarComparison(type), new GrammarDualOperator(type));
         if (notNull(expression)) return required(new GrammarExpression(type));
 
         return constant;
+    }
+
+    @Override
+    public String getJavascript() {
+        if (type == null) return "<=" + nextGrammar() + ">";
+        return "<" + type.name() + "=>\n";
     }
 }

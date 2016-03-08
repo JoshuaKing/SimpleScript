@@ -12,4 +12,9 @@ public class GrammarVariableTypes extends GrammarRule<Token> {
     public Token parseGrammar() throws GrammarException {
         return required(KeywordInt, KeywordFloat, KeywordBoolean, KeywordString);
     }
+
+    @Override
+    public String getJavascript() {
+        return "var";
+    }
 }

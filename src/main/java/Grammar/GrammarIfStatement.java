@@ -29,4 +29,13 @@ public class GrammarIfStatement extends GrammarRule<Expression> {
 
         return expression;
     }
+
+    @Override
+    public String getJavascript() {
+        String javascript = "if (" + nextGrammar() + ") {\n";
+        while (hasNextGrammar()) {
+            javascript += indent(nextGrammar());
+        }
+        return javascript + "}\n";
+    }
 }

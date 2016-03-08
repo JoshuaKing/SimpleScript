@@ -2,7 +2,9 @@ package compiler;
 
 import Grammar.GrammarException;
 import Grammar.GrammarFile;
+import Grammar.GrammarRegex;
 import Grammar.GrammarRule;
+import Syntax.SyntaxElement;
 import classes.Token;
 import handler.TokenIterator;
 import org.apache.commons.io.IOUtils;
@@ -19,9 +21,14 @@ public class Translate {
         StringWriter sw = new StringWriter(10);
         IOUtils.copy(new FileReader("files/test.ss"), sw);
         List<Token> tokens = LexicalAnalyser.tokenize(sw.toString());
+        StringBuilder reformatted = new StringBuilder();
         for (Token t : tokens) {
-            System.out.println(t.getType().name() + " : " + t.getText());
+            reformatted.append(t.getText()).append(' ');
         }
+        System.out.println(reformatted.toString());
+
+        SyntaxElement element = GrammarRegex.parse(reformatted.toString());
+        System.out.println(element.traverse());
 
         GrammarRule file = new GrammarFile();
         TokenIterator tokenIterator = new TokenIterator(tokens);
@@ -37,7 +44,7 @@ public class Translate {
 
         String output = JavascriptGenerator.parseGrammar(file);
         System.out.println("Javascript =\n" + output);
-        System.out.println("Javascript2 =\n" + file.getJavascript(0));
+        System.out.println("Javascript2 =\n" + file.getJavascript());
     }
 
     private static void display(String file, int lineNumber, int columnNumber) {
