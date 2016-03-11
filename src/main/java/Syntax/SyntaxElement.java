@@ -1,6 +1,6 @@
 package Syntax;
 
-import Grammar.GrammarException;
+import classes.GrammarException;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -12,10 +12,12 @@ import java.util.stream.Collectors;
  */
 public class SyntaxElement {
     boolean isLeaf = false;
+    int index = 0;
     String value;
     String grammar;
     SyntaxElement parent;
     List<SyntaxElement> children = new ArrayList<>();
+    private Symbol.ResultType resultType;
 
     public SyntaxElement(SyntaxElement parent, String grammar, String value, boolean leaf) {
         this.parent = parent;
@@ -23,6 +25,7 @@ public class SyntaxElement {
         this.grammar = grammar;
         isLeaf = leaf;
     }
+
 
     @Override
     public boolean equals(Object o) {
@@ -39,6 +42,10 @@ public class SyntaxElement {
         return true;
     }
 
+    public void incrementIndex() {
+        index++;
+    }
+
     public SyntaxElement addNode(SyntaxElement element) {
         if (children.size() > 0 && children.get(children.size() - 1).equals(element)) return element;
         children.add(element);
@@ -47,9 +54,9 @@ public class SyntaxElement {
 
     @Override
     public String toString() {
-        String traversal = grammar + "<" + this.value + ":" + (parent != null ? parent.getValue() : "") + "> {\n";
+        String traversal = this.value + " [" + this.grammar + ":" + (parent != null ? parent.getValue() : "") + "] {\n";
         for (SyntaxElement el : children) {
-            if (el.isLeaf) traversal += indent(el.grammar + "<" + el.value + "::" + el.parent.getValue() + ">");
+            if (el.isLeaf) traversal += indent(el.value + " [" + el.grammar + "::" + el.parent.getValue() + "]");
             else traversal += indent(el.toString());
         }
         return traversal + "}\n";
@@ -87,6 +94,10 @@ public class SyntaxElement {
 
     public SyntaxElement getChild(int i) {
         return children.get(i);
+    }
+
+    public List<SyntaxElement> getChildren() {
+        return children;
     }
 
     public SyntaxElement getSyntax(String... path) {
@@ -141,8 +152,6 @@ public class SyntaxElement {
         } catch (InvocationTargetException e) {
             try {
                 throw e.getCause();
-            } catch (GrammarException err) {
-                throw err;
             } catch (Throwable throwable) {
                 throwable.printStackTrace();
                 return false;
@@ -152,5 +161,13 @@ public class SyntaxElement {
             return false;
         }
         return true;
+    }
+
+    public Symbol.ResultType getResultType() {
+        return resultType;
+    }
+
+    public void setResultType(Symbol.ResultType resultType) {
+        this.resultType = resultType;
     }
 }

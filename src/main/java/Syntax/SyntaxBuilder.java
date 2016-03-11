@@ -19,32 +19,32 @@ public class SyntaxBuilder {
         Float("\\d+[.]\\d+", true),
         Integer("\\d+", true),
         Boolean("true|false", true),
+        Anything(".*", true),
         File("Package Import* ClassDefinition"),
         Package("'package' Name ';'"),
         Import("'import' Name ';'"),
         ClassDefinition("'class' Name '{' [Field,Method]+ '}'"),
         Access("'public' | 'private'"),
-        Field("Access? VariableDeclaration Assignment? ';'"),
+        Field("Access? VariableInstantiation ';'"),
         Method("Access? ReturnType Name '(' {VariableDeclaration}* ')' '{' Statement* '}'"),
         ReturnType("VariableType | 'void'"),
         VariableType("'int' | 'float' | 'string' | 'map' | 'list' | 'boolean'"),
-        Assignment("'=' Value"),
-        Expression("'(' Expression ')' | CombinationExpression Combo*"),
-        CombinationExpression("SoloOperator? Value Extension*"),
-        Extension("SoloOperator | [Comparator,DualOperator] Value | '?' Expression"),
-        Combo("BooleanComparator CombinationExpression"),
+        BooleanExpression("'(' BooleanExpression ')' | CumulativeExpression <BooleanComparator,CumulativeExpression>*"),
+        CumulativeExpression("'!'? Value SoloOperator? Extension*"),
+        Extension("[Comparator,DualOperator] '!'? Value SoloOperator?"),
         Value("Constant | MethodCall | Variable"),
         Constant("String | Float | Integer | Boolean"),
         Variable("Name"),
         VariableDeclaration("VariableType Name"),
-        SoloOperator("'++' | '--' | '!'"),
+        VariableInstantiation("VariableDeclaration <'=',Value>?"),
+        SoloOperator("'++' | '--'"),
         BooleanComparator("'&&' | '||'"),
         DualOperator("'+' | '-' | '*' | '/' | '**' | '&' | '|' | '^' | '~'"),
         Comparator("'==' | '!=' | '<' | '>'"),
-        MethodCall("Name '(' {Expression}* ')'"),
-        Statement("WhileStatement | IfStatement | 'return' Expression ';' | Expression ';'"),
-        WhileStatement("'while' '(' Expression ')' '{' Statement+ '}'"),
-        IfStatement("'if' '(' Expression ')' '{' Statement+ '}'"),
+        MethodCall("Name '(' {BooleanExpression}* ')'"),
+        Statement("WhileStatement | IfStatement | 'return' CumulativeExpression ';' | CumulativeExpression ';'"),
+        WhileStatement("'while' '(' BooleanExpression ')' '{' Statement+ '}'"),
+        IfStatement("'if' '(' BooleanExpression ')' '{' Statement+ '}'"),
         ListSeparator("','");
 
         private final boolean isRegex;
@@ -114,22 +114,33 @@ public class SyntaxBuilder {
     }
 
     private static List<Token> matchAny(String grammar, List<Token> tokens, SyntaxElement syntaxElement) {
-        if (grammar.matches("^\\[.*,.*\\]$")) {
+        if (grammar.matches("^\\[.*?\\]$")) {
             grammar = trimCharacter(grammar);
         } else {
-            return matchCsv(grammar, tokens, syntaxElement);
+            return matchAll(grammar, tokens, syntaxElement);
         }
         String[] grammars = grammar.split(",");
         for (String g : grammars) {
-            List<Token> c = matchCsv(g, tokens, syntaxElement);
-            if (c != null) {
-                return c;
-            }
+            List<Token> tokensCopy = matchAll(g, tokens, syntaxElement);
+            if (tokensCopy != null) return tokensCopy;
         }
         return null;
     }
 
-    private static List<Token> matchCsv(String grammar, List<Token> tokens, SyntaxElement syntaxElement) {
+    private static List<Token> matchAll(String grammar, List<Token> tokens, SyntaxElement syntaxElement) {
+        if (grammar.matches("^<.*?>$")) {
+            grammar = trimCharacter(grammar);
+            for (String g : grammar.split(",")) {
+                tokens = matchOne(g, tokens, syntaxElement);
+                if (tokens == null) return null;
+            }
+            return tokens;
+        } else {
+            return matchRepeating(grammar, tokens, syntaxElement);
+        }
+    }
+
+    private static List<Token> matchRepeating(String grammar, List<Token> tokens, SyntaxElement syntaxElement) {
         if (grammar.matches("^\\{.*\\}$")) {
             grammar = trimCharacter(grammar);
             tokens = matchOne(grammar, tokens, syntaxElement);
@@ -138,7 +149,11 @@ public class SyntaxBuilder {
             if ((tokensCopy = matchOne(Grammar.ListSeparator.grammar, tokens, syntaxElement)) == null) {
                 return tokens;
             }
-            return matchNodeGrammar(Grammar.of(grammar), tokensCopy, syntaxElement);
+            for (String g : grammar.split(",")) {
+                tokensCopy =  matchNodeGrammar(Grammar.of(g), tokensCopy, syntaxElement);
+                if (tokensCopy == null) return null;
+            }
+            return tokensCopy;
         } else {
             return matchOne(grammar, tokens, syntaxElement);
         }
@@ -224,6 +239,7 @@ public class SyntaxBuilder {
                 System.out.println("Matched " + g);
                 return tokenCopy;
             }
+            syntaxElement.incrementIndex();
         }
         System.out.println(Arrays.toString(tokens.toArray()));
         return null;

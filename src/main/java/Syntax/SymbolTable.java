@@ -54,7 +54,7 @@ public class SymbolTable {
             while (search != null) {
                 Symbol symbol = search.symbols.get(name);
                 if (symbol != null) return symbol;
-                search = search.scopes.get(name);
+                search = search.parentScope;
             }
             return null;
         }
