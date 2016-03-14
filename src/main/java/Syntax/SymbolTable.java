@@ -76,19 +76,15 @@ public class SymbolTable {
     }
 
     public String toString() {
-        String dump = "{\n";
-        dump += indent("Symbols: {");
+        String dump = "Symbols:\n";
         for (Symbol symbol : symbols.values()) {
-            dump += indent(indent(symbol.symbol.name() + " " + symbol.name + " : " + symbol.result.name() + " [" + symbol.access.name() + "]"));
+            dump += indent(symbol.symbol.name() + " " + symbol.name + " : " + symbol.result.name() + " [" + symbol.access.name() + "]");
         }
-        dump += indent("}");
-        dump += indent("Scopes: [");
+        dump += "Scopes:\n";
         for (String scope : scopes.keySet()) {
-            dump += indent(indent(scope + " : " + scopes.get(scope).toString()));
+            dump += indent(scope + " :\n" + indent(scopes.get(scope).toString()));
         }
-        dump += indent("]");
-        dump += "}";
-        return dump;
+        return dump + "\n";
     }
 
     public static String dump() {

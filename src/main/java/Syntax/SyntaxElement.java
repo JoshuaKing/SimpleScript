@@ -161,21 +161,21 @@ public class SyntaxElement {
     }
 
     public SyntaxElement ancestor(Grammar grammar) {
-        if (getGrammar().equals(grammar.name())) return this;
+        if (grammar.equals(getGrammar())) return this;
         if (parent == null) return null;
         return parent.ancestor(grammar);
     }
 
     public boolean contains(Grammar grammar) {
         for (SyntaxElement child : children) {
-            if (child.getGrammar().equals(grammar.name())) return true;
+            if (grammar.equals(child.getGrammar())) return true;
         }
         return false;
     }
 
-    public SyntaxElement recurse(String grammar) {
+    public SyntaxElement recurse(Grammar grammar) {
         for (SyntaxElement child : children) {
-            if (child.getGrammar().equals(grammar)) return recurse(grammar);
+            if (grammar.equals(child.getGrammar())) return recurse(grammar);
         }
         return this;
     }
