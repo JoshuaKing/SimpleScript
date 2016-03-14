@@ -1,160 +1,146 @@
 package Syntax;
 
-import classes.GrammarException;
+import Syntax.SyntaxBuilder.Grammar;
 
 import java.util.List;
+
+import static Syntax.SyntaxBuilder.Grammar.*;
+import static Syntax.SyntaxBuilder.Grammar.Package;
 
 /**
  * Created by Josh on 8/03/2016.
  */
 public class Verify {
-    public static boolean verify(SyntaxElement tree, String filename) throws GrammarException {
-        return tree.verify();
+    private static boolean passed = true;
+
+    public static boolean verify(SyntaxElement tree, String filename) {
+        tree.verify();
+        return passed;
     }
 
-    private static boolean verifyType(Symbol.ResultType type, SyntaxElement syntax, String... location) {
-        return syntax.getSyntax(location).get(type.name()) != null;
+    private static boolean isConstantType(Symbol.ResultType type, SyntaxElement syntax) {
+        return syntax.getAt(Grammar.of(type.name())) != null;
     }
 
-    protected static boolean handleVariableInstantiation(SyntaxElement syntax) throws GrammarException {
-        Symbol symbol = new Symbol(syntax.get("VariableDeclaration", "Name"));
-        symbol.result = Symbol.ResultType.of(syntax.get("VariableDeclaration", "VariableType"));
-        if (syntax.get("Value", "Constant") != null) {
-            if (verifyType(symbol.result, syntax, "Value", "Constant")) {
-                System.out.println("Instantiated " + symbol.name + " to " + syntax.get("Value", "Constant"));
-            } else {
-                System.err.println("Error instantiating " + symbol.result.name() + " " + symbol.name + " to " + syntax.getSyntax("Value", "Constant"));
-            }
-        } else if (syntax.get("Value", "Variable") != null) {
-            Symbol var = SymbolTable.find(syntax.get("Value", "Variable", "Name"));
-            if (var == null) {
-                System.err.println("Error assigning variable to non-existant variable.");
-            } else if (!symbol.result.equals(var.result)) {
-                System.err.println("Error instantiating " + symbol.result.name() + " " + symbol.name + " to " + var.name + " of type " + var.result.name());
-            } else {
-                System.out.println("Instantiated " + symbol.result.name() + " " + symbol.name + " to " + var.result.name() + " " + var.name);
-            }
+    public static void syntaxAssert(Boolean result, String error) {
+        if (!result) {
+            passed = false;
+            System.err.println("Syntax Error: " + error);
         }
-        if (syntax.get("Value", "MethodCall") != null) return true;
-        return SymbolTable.addToScope(symbol);
     }
 
-    protected static boolean handleField(SyntaxElement syntax) throws GrammarException {
-        if (!handleAll(syntax, "VariableInstantiation")) return false;
-        Symbol symbol = SymbolTable.find(syntax.get("VariableInstantiation", "VariableDeclaration", "Name"));
-        symbol.access = Symbol.AccessType.of(syntax.get("Access"));
+    protected static void handleVariableInstantiation(SyntaxElement syntax) {
+        handleAll(syntax, VariableDeclaration);
+        String name = syntax.getAt(VariableDeclaration, Name);
+        Symbol symbol = SymbolTable.find(name);
+
+        if (syntax.getAt(Value, Constant) != null) {
+            String error = "Error instantiating " + symbol.result + " " + symbol.name + " to " + syntax.getSyntaxAt(Value, Constant);
+            syntaxAssert(isConstantType(symbol.result, syntax.getSyntaxAt(Value, Constant)), error);
+        } else if (syntax.getAt(Value, Variable) != null) {
+            String variableName = syntax.getAt(Value, Variable, Name);
+            Symbol variable = SymbolTable.find(variableName);
+            syntaxAssert(variable != null, "Error assigning variable " + symbol.name + " to non-existent variable " + variableName);
+            if (variable == null) return;
+            syntaxAssert(symbol != variable, "Invalid self-reference (" + variableName + ") in variable instantiation.");
+            String error = "Error instantiating " + symbol.result + " " + symbol.name + " to " + variable.name + " of type " + variable.result;
+            syntaxAssert(symbol.result.equals(variable.result), error);
+        } else if (syntax.getAt(Value, MethodCall) != null) {
+            Symbol method = SymbolTable.find(syntax.getAt(Value, MethodCall, Name));
+            String error = "Error instantiating " + symbol.result + " " + symbol.name + " to method " + method.name + " return type " + method.result;
+            syntaxAssert(symbol.result.equals(method.result), error);
+        }
+    }
+
+    protected static void handleVariableDeclaration(SyntaxElement syntax) {
+        Symbol symbol = new Symbol(syntax.getAt(Name));
+        symbol.result = Symbol.ResultType.fromDeclaredType(syntax.getAt(VariableType));
+        SymbolTable.addToScope(symbol);
+    }
+
+    protected static void handleField(SyntaxElement syntax) {
+        handleAll(syntax, VariableInstantiation);
+        Symbol symbol = SymbolTable.find(syntax.getAt(VariableInstantiation, VariableDeclaration, Name));
+        symbol.access = Symbol.AccessType.fromDeclaredType(syntax.getAt(Access));
         if (symbol.access == null) symbol.access = Symbol.AccessType.Private;
-        if (!SymbolTable.updateSymbol(symbol)) return false;
-        return true;
+        SymbolTable.updateSymbol(symbol);
     }
 
-    protected static boolean handleAssignment(SyntaxElement syntax) throws GrammarException {
-        if (!handleAll(syntax, "VariableDeclaration")) return false;
-        Symbol symbol = SymbolTable.find(syntax.get("VariableDeclaration", "Name"));
-        symbol.access = Symbol.AccessType.of(syntax.get("Access"));
-        if (symbol.access == null) symbol.access = Symbol.AccessType.Private;
-        if (!SymbolTable.updateSymbol(symbol)) return false;
-        return handleAll(syntax, "Assignment");
-    }
-
-    protected static boolean handleMethod(SyntaxElement syntax) throws GrammarException {
-        Symbol symbol = new Symbol(syntax.get("Name"));
+    protected static void handleMethod(SyntaxElement syntax) {
+        String name = syntax.getAt(Name);
+        Symbol symbol = new Symbol(name);
         symbol.symbol = Symbol.SymbolType.Method;
-        symbol.result = Symbol.ResultType.of(syntax.get("ReturnType"));
-        symbol.access = Symbol.AccessType.of(syntax.get("Access"));
+        symbol.result = Symbol.ResultType.fromDeclaredType(syntax.getAt(ReturnType));
+        symbol.access = Symbol.AccessType.fromDeclaredType(syntax.getAt(Access));
         if (symbol.access == null) symbol.access = Symbol.AccessType.Public;
-        if (!SymbolTable.addToScope(symbol)) return false;
-        if (SymbolTable.newScope(syntax.get("Name")) == null) return false;
-        return handleAll(syntax, "VariableDeclaration", "Statement");
+
+        SymbolTable.addToScope(symbol);
+        SymbolTable.newScope(name);
+        handleAll(syntax, VariableDeclaration);
+        Symbol methodScope = Symbol.newScopeSymbol("Method-" + name);
+        SymbolTable.newScope(methodScope.name);
+        handleAll(syntax, Statement);
+        SymbolTable.exitScope();
     }
 
-    protected static boolean handleStatement(SyntaxElement syntax) throws GrammarException {
-        switch (syntax.index) {
-            case 1:
-                break;
-            case 2:
-                break;
-            case 3:
-                Symbol symbol = SymbolTable.find(ancestor(syntax, "Method").get("Name"));
-                if (symbol == null) {
-                    System.err.println("Method " + ancestor(syntax, "Method").get("Name") + " not found.");
-                    return false;
-                }
-                if (!handleAll(syntax, "CumulativeExpression")) return false;
-                System.out.println("Return Statement: " +
-                        symbol.result.equals(syntax.getSyntax("CumulativeExpression").getResultType()));
-                break;
-            default:
-                break;
-        }
-
-        for (SyntaxElement el : syntax.getChildren()) {
-            if (!el.verify()) return false;
-        }
-        return true;
+    protected static void handleReturnStatement(SyntaxElement syntax) {
+        Symbol symbol = SymbolTable.find(syntax.ancestor(Method).getAt(Name));
+        handleAll(syntax, CumulativeExpression);
+        Symbol.ResultType resultType = syntax.getSyntaxAt(CumulativeExpression).getResultType();
+        syntaxAssert(symbol.result.equals(resultType), "Return statement of type " + resultType + " but expected " + symbol.result);
     }
 
-    protected static boolean handleCumulativeExpression(SyntaxElement syntax) throws GrammarException {
-        if (!contains(syntax, "Extension")) {
-            Symbol.ResultType method = SymbolTable.find(ancestor(syntax, "Method").get("Name")).result;
-            return getValueType(syntax.getSyntax("Value")).equals(method);
-        }
-        //SyntaxElement value = recurseCumulativeExpression();
-
-        for (SyntaxElement el : syntax.getChildren()) {
-            if (!el.verify()) return false;
-        }
-        return true;
+    protected static boolean handleExtension(SyntaxElement syntax) {
+        Symbol.ResultType parentType = getValueType(syntax.ancestor(CumulativeExpression).getSyntaxAt(Expression, Value));
+        Symbol.ResultType type = getValueType(syntax.getSyntaxAt(Expression, Value));
+        if (parentType.equals(Symbol.ResultType.None) || parentType.equals(Symbol.ResultType.Void)) return false;
+        return parentType.equals(type);
     }
 
-    private static Symbol.ResultType getValueType(SyntaxElement value) throws GrammarException {
-        if (contains(value, "MethodCall")) {
-            return SymbolTable.find(value.get("MethodCall", "Name")).result;
-        } else if (contains(value, "Constant")) {
-            return value.getSyntax("Constant").getChild(0).getResultType();
-        } else if (contains(value, "Variable")) {
-            return SymbolTable.find(value.get("Variable", "Name")).result;
+    private static Symbol.ResultType getValueType(SyntaxElement value) {
+        if (value.contains(MethodCall)) {
+            return SymbolTable.find(value.getAt(MethodCall, Name)).result;
+        } else if (value.contains(Constant)) {
+            return Symbol.ResultType.fromGrammarName(value.getSyntaxAt(Constant).getChild(0).getGrammar().name());
+        } else if (value.contains(Variable)) {
+            return SymbolTable.find(value.getAt(Variable, Name)).result;
         }
         return Symbol.ResultType.None;
     }
 
-    protected static boolean handlePackage(SyntaxElement syntax) throws GrammarException {
-        return SymbolTable.newScope(syntax.get("Name")) != null;
+    protected static void handleMethodCall(SyntaxElement syntax) {
+        String name = syntax.getAt(Name);
+        Symbol method = SymbolTable.find(name);
+        syntaxAssert(method != null, "Method " + name + " does not exist");
+        if (method == null) return;
+
     }
 
-    protected static boolean handleClassDefinition(SyntaxElement syntax) throws GrammarException {
-        Symbol symbol = new Symbol(syntax.get("Name"));
+    protected static void handleFile(SyntaxElement syntax) {
+        SymbolTable.newScope(syntax.getAt(Package, Name));
+        handleAll(syntax, Import);
+        handleAll(syntax, ClassDefinition);
+        SymbolTable.exitScope();
+    }
+
+    protected static void handleClassDefinition(SyntaxElement syntax) {
+        Symbol symbol = new Symbol(syntax.getAt(Name));
         symbol.symbol = Symbol.SymbolType.Class;
         symbol.result = Symbol.ResultType.None;
         symbol.access = Symbol.AccessType.Public;
-        if (!SymbolTable.addToScope(symbol)) return false;
-        if (SymbolTable.newScope(syntax.get("Name")) == null) return false;
-        return handleAll(syntax, "Field", "Method");
+
+        SymbolTable.addToScope(symbol);
+        SymbolTable.newScope(syntax.getAt(Name));
+        handleAll(syntax, Field, Method);
+        SymbolTable.exitScope();
     }
 
-    private static boolean handleAll(SyntaxElement syntax, String... grammars) throws GrammarException {
-        for (String grammar : grammars) {
-            List<SyntaxElement> elements = syntax.getAllSyntax(grammar);
+    private static void handleAll(SyntaxElement syntax, Grammar... grammars) {
+        for (Grammar grammar : grammars) {
+            List<SyntaxElement> elements = syntax.childrenFilter(grammar);
             for (SyntaxElement element : elements) {
-                if (!element.verify()) return false;
+                element.verify();
             }
         }
-        return true;
-    }
-
-    private static boolean contains(SyntaxElement syntax, String grammar) throws GrammarException {
-        List<SyntaxElement> elements = syntax.getAllSyntax(grammar);
-        for (SyntaxElement element : elements) {
-            if (element.getGrammar().equals(grammar)) return true;
-        }
-        return false;
-    }
-
-    private static SyntaxElement ancestor(SyntaxElement syntax, String grammarName) {
-        while (syntax != null) {
-            if (syntax.grammar.equals(grammarName)) return syntax;
-            syntax = syntax.getParent();
-        }
-        return null;
     }
 }

@@ -61,11 +61,16 @@ public class SymbolTable {
 
         // Top Down w/Path
         SymbolTable search = root;
-        for (String part : name.split("\\.")) {
-            Symbol symbol = search.symbols.get(part);
-            if (symbol != null) return symbol;
-            search = search.scopes.get(name);
-            if (search != null) return null;
+        String[] parts = name.split("\\.");
+        for (int i = 0; i < parts.length; i++) {
+            String part = parts[i];
+            if (i < parts.length - 1) {
+                search = search.scopes.get(part);
+                if (search == null) return null;
+            } else {
+                Symbol symbol = search.symbols.get(parts[i]);
+                if (symbol != null) return symbol;
+            }
         }
         return null;
     }

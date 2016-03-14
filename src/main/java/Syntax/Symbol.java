@@ -6,8 +6,9 @@ package Syntax;
 public class Symbol {
     public enum AccessType {
         Public("public"),
-        Protected(""),
-        Private("private");
+        Protected(null),
+        Private("private"),
+        Unaddressable(null);
 
         private String value;
 
@@ -15,7 +16,7 @@ public class Symbol {
             this.value = value;
         }
 
-        public static AccessType of(String value) {
+        public static AccessType fromDeclaredType(String value) {
             if (value == null) return null;
             for (AccessType accessType : AccessType.values()) {
                 if (value.equals(accessType.value)) return accessType;
@@ -31,26 +32,36 @@ public class Symbol {
     }
 
     public enum ResultType {
-        String("string"),
-        Integer("int"),
-        Float("float"),
-        Boolean("boolean"),
-        Map("map"),
-        List("list"),
-        Void("void"),
-        None(null),
-        Unknown(null);
+        String("string", "String"),
+        Integer("int", "Integer"),
+        Float("float", "Float"),
+        Boolean("boolean", "Boolean"),
+        Map("map", "Map"),
+        List("list", "List"),
+        Void("void", null),
+        None(null, null),
+        UserClass(null, null);
 
-        private String value;
+        private String declaredName;
+        private String grammarName;
 
-        ResultType(String value) {
-            this.value = value;
+        ResultType(String declaredName, String grammarName) {
+            this.declaredName = declaredName;
+            this.grammarName = grammarName;
         }
 
-        public static ResultType of(String value) {
+        public static ResultType fromDeclaredType(String value) {
             if (value == null) return null;
             for (ResultType resultType : ResultType.values()) {
-                if (value.equals(resultType.value)) return resultType;
+                if (value.equals(resultType.declaredName)) return resultType;
+            }
+            return null;
+        }
+
+        public static ResultType fromGrammarName(String value) {
+            if (value == null) return null;
+            for (ResultType resultType : ResultType.values()) {
+                if (value.equals(resultType.grammarName)) return resultType;
             }
             return null;
         }
@@ -58,11 +69,11 @@ public class Symbol {
 
     private static int count = 0;
 
-    public final String id = "SYMBOL-" + count++;
-    public String name = "Scope";
+    private final String id = "SYMBOL-" + count++;
+    public String name;
     public SymbolType symbol = SymbolType.Variable;
     public AccessType access = AccessType.Protected;
-    public ResultType result = ResultType.Unknown;
+    public ResultType result = ResultType.None;
 
     public Symbol() { }
 
@@ -79,5 +90,11 @@ public class Symbol {
         this.symbol = symbol;
         this.result = result;
         this.access = access;
+    }
+
+    public static Symbol newScopeSymbol(String prefix) {
+        Symbol symbol = new Symbol();
+        symbol.name = prefix + "-SCOPE-" + symbol.id;
+        return symbol;
     }
 }

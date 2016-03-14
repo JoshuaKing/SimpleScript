@@ -14,6 +14,7 @@ import java.util.regex.Pattern;
  */
 public class SyntaxBuilder {
     public enum Grammar {
+        Keyword("if|while|int|float|boolean|string|map|list", true),
         Name("[a-zA-Z][a-zA-Z0-9.]*", true),
         String("\".*?\"|\'.*?\'", true),
         Float("\\d+[.]\\d+", true),
@@ -29,22 +30,24 @@ public class SyntaxBuilder {
         Method("Access? ReturnType Name '(' {VariableDeclaration}* ')' '{' Statement* '}'"),
         ReturnType("VariableType | 'void'"),
         VariableType("'int' | 'float' | 'string' | 'map' | 'list' | 'boolean'"),
-        BooleanExpression("'(' BooleanExpression ')' | CumulativeExpression <BooleanComparator,CumulativeExpression>*"),
-        CumulativeExpression("'!'? Value SoloOperator? Extension*"),
-        Extension("[Comparator,DualOperator] '!'? Value SoloOperator?"),
+        VariableInstantiation("VariableDeclaration <'=',Value>?"),
+        VariableDeclaration("VariableType Name"),
+        Expression("'(' Expression ')' | '!'? Value SoloOperator?"),
+        CumulativeExpression("Expression Extension*"),
+        Extension("[Comparator,BinaryOperator,BooleanComparator] Expression"),
         Value("Constant | MethodCall | Variable"),
         Constant("String | Float | Integer | Boolean"),
         Variable("Name"),
-        VariableDeclaration("VariableType Name"),
-        VariableInstantiation("VariableDeclaration <'=',Value>?"),
         SoloOperator("'++' | '--'"),
         BooleanComparator("'&&' | '||'"),
-        DualOperator("'+' | '-' | '*' | '/' | '**' | '&' | '|' | '^' | '~'"),
+        BinaryOperator("'+' | '-' | '*' | '/' | '**'"),
+        UnaryOperator("'&' | '|' | '^' | '~'"),     // Unused
         Comparator("'==' | '!=' | '<' | '>'"),
-        MethodCall("Name '(' {BooleanExpression}* ')'"),
-        Statement("WhileStatement | IfStatement | 'return' CumulativeExpression ';' | CumulativeExpression ';'"),
-        WhileStatement("'while' '(' BooleanExpression ')' '{' Statement+ '}'"),
-        IfStatement("'if' '(' BooleanExpression ')' '{' Statement+ '}'"),
+        MethodCall("Name '(' {CumulativeExpression}* ')'"),
+        Statement("WhileStatement | IfStatement | ReturnStatement | VariableInstantiation ';' | CumulativeExpression ';'"),
+        ReturnStatement("'return' CumulativeExpression ';'"),
+        WhileStatement("'while' '(' CumulativeExpression ')' '{' Statement+ '}'"),
+        IfStatement("'if' '(' CumulativeExpression ')' '{' Statement+ '}'"),
         ListSeparator("','");
 
         private final boolean isRegex;
@@ -163,7 +166,7 @@ public class SyntaxBuilder {
         String noQuotes = trimCharacter(grammar);
 
         if (grammar.matches("^'.*'$") && tokens.get(0).getText().equals(noQuotes)) {
-            syntaxElement.addNode(new SyntaxElement(syntaxElement, grammar, noQuotes, true));
+            syntaxElement.addNode(new SyntaxElement(syntaxElement, null, noQuotes, true));
             System.out.println("Added Node " + noQuotes + " to parent = " + syntaxElement.getValue());
             return shift(tokens);
         } else if (grammar.matches("^'.*'$")) {
@@ -190,7 +193,7 @@ public class SyntaxBuilder {
         Matcher m = Pattern.compile("^" + grammar.grammar + "$").matcher(tokens.get(0).getText());
         if (m.find()) {
             System.out.println("Added Leaf " + m.group() + " to parent = " + syntaxElement.getValue());
-            syntaxElement.addNode(new SyntaxElement(syntaxElement, grammar.name(), m.group(), true));
+            syntaxElement.addNode(new SyntaxElement(syntaxElement, grammar, m.group(), true));
             return shift(tokens);
         }
 
@@ -212,7 +215,7 @@ public class SyntaxBuilder {
     private static List<Token> matchNodeGrammar(Grammar grammar, List<Token> tokens, SyntaxElement syntaxElement) {
         if (grammar == null) return null;
 
-        SyntaxElement el = new SyntaxElement(syntaxElement, grammar.name(), grammar.name(), false);
+        SyntaxElement el = new SyntaxElement(syntaxElement, grammar, grammar.name(), false);
         if (grammar.isRegex) {
             List<Token> c = matchLeaf(grammar, tokens, el);
             if (c == null) return null;
@@ -251,7 +254,7 @@ public class SyntaxBuilder {
     }
 
     public static SyntaxElement build(List<Token> tokens) {
-        SyntaxElement root = new SyntaxElement(null, "/", "ROOT", false);
+        SyntaxElement root = new SyntaxElement(null, null, "ROOT", false);
         shortestError = tokens;
         if (null == matchNodeGrammar(Grammar.File, tokens, root)) {
             System.out.println(getTokenError().getText());

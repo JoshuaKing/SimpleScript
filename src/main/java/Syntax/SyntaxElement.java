@@ -1,6 +1,6 @@
 package Syntax;
 
-import classes.GrammarException;
+import Syntax.SyntaxBuilder.Grammar;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -14,12 +14,12 @@ public class SyntaxElement {
     boolean isLeaf = false;
     int index = 0;
     String value;
-    String grammar;
+    Grammar grammar;
     SyntaxElement parent;
     List<SyntaxElement> children = new ArrayList<>();
     private Symbol.ResultType resultType;
 
-    public SyntaxElement(SyntaxElement parent, String grammar, String value, boolean leaf) {
+    public SyntaxElement(SyntaxElement parent, Grammar grammar, String value, boolean leaf) {
         this.parent = parent;
         this.value = value;
         this.grammar = grammar;
@@ -56,7 +56,7 @@ public class SyntaxElement {
     public String toString() {
         String traversal = this.value + " [" + this.grammar + ":" + (parent != null ? parent.getValue() : "") + "] {\n";
         for (SyntaxElement el : children) {
-            if (el.isLeaf) traversal += indent(el.value + " [" + el.grammar + "::" + el.parent.getValue() + "]");
+            if (el.isLeaf) traversal += indent("'" + el.value + "'");
             else traversal += indent(el.toString());
         }
         return traversal + "}\n";
@@ -80,7 +80,7 @@ public class SyntaxElement {
         return children.remove(element);
     }
 
-    public String getGrammar() {
+    public Grammar getGrammar() {
         return grammar;
     }
 
@@ -100,12 +100,12 @@ public class SyntaxElement {
         return children;
     }
 
-    public SyntaxElement getSyntax(String... path) {
+    public SyntaxElement getSyntaxAt(Grammar... path) {
         SyntaxElement value = this;
-        for (String element : path) {
+        for (Grammar grammar : path) {
             boolean found = false;
             for (SyntaxElement child : value.children) {
-                if (child.grammar.equals(element)) {
+                if (grammar.equals(child.grammar)) {
                     value = child;
                     found = true;
                     break;
@@ -116,16 +116,16 @@ public class SyntaxElement {
         return value;
     }
 
-    public List<SyntaxElement> getAllSyntax(String... grammars) {
+    public List<SyntaxElement> childrenFilter(Grammar... grammars) {
         List<SyntaxElement> syntaxList = new ArrayList<>();
-        for (String grammar : grammars) {
-            syntaxList.addAll(children.stream().filter(c -> c.grammar.equals(grammar)).collect(Collectors.toList()));
+        for (Grammar grammar : grammars) {
+            syntaxList.addAll(children.stream().filter(c -> grammar.equals(c.grammar)).collect(Collectors.toList()));
         }
         return syntaxList;
     }
 
-    public String get(String... path) {
-        SyntaxElement value = getSyntax(path);
+    public String getAt(Grammar... path) {
+        SyntaxElement value = getSyntaxAt(path);
         if (value == null) return null;
         if (value.children != null && value.children.size() > 0) return value.getChild(0).value;
         return value.value;
@@ -137,30 +137,47 @@ public class SyntaxElement {
         }
     }
 
-    public boolean verify() throws GrammarException {
+    public void verify() {
         try {
             if (isLeaf) {
                 System.out.println("verified leaf " + value);
-                return true;
+            } else {
+                java.lang.reflect.Method method = Verify.class.getDeclaredMethod("handle" + value, SyntaxElement.class);
+                method.invoke(null, this);
             }
-            java.lang.reflect.Method method = Verify.class.getDeclaredMethod("handle" + value, SyntaxElement.class);
-            if (!(boolean) method.invoke(null, this)) return false;
         } catch (NoSuchMethodException e) {
             for (SyntaxElement el : children) {
-                if (!el.verify()) return false;
+                el.verify();
             }
         } catch (InvocationTargetException e) {
             try {
                 throw e.getCause();
             } catch (Throwable throwable) {
                 throwable.printStackTrace();
-                return false;
             }
         } catch (IllegalAccessException e) {
             e.printStackTrace();
-            return false;
         }
-        return true;
+    }
+
+    public SyntaxElement ancestor(Grammar grammar) {
+        if (getGrammar().equals(grammar.name())) return this;
+        if (parent == null) return null;
+        return parent.ancestor(grammar);
+    }
+
+    public boolean contains(Grammar grammar) {
+        for (SyntaxElement child : children) {
+            if (child.getGrammar().equals(grammar.name())) return true;
+        }
+        return false;
+    }
+
+    public SyntaxElement recurse(String grammar) {
+        for (SyntaxElement child : children) {
+            if (child.getGrammar().equals(grammar)) return recurse(grammar);
+        }
+        return this;
     }
 
     public Symbol.ResultType getResultType() {
