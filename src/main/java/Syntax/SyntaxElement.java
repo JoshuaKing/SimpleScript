@@ -175,7 +175,7 @@ public class SyntaxElement {
 
     public SyntaxElement recurse(Grammar grammar) {
         for (SyntaxElement child : children) {
-            if (grammar.equals(child.getGrammar())) return recurse(grammar);
+            if (grammar.equals(child.getGrammar())) return child.recurse(grammar);
         }
         return this;
     }

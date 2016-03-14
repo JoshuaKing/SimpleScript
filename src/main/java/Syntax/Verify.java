@@ -85,16 +85,27 @@ public class Verify {
 
     protected static void handleReturnStatement(SyntaxElement syntax) {
         Symbol symbol = SymbolTable.find(syntax.ancestor(Method).getAt(Name));
-        handleAll(syntax, CumulativeExpression);
-        Symbol.ResultType resultType = syntax.getSyntaxAt(CumulativeExpression).getResultType();
+        Symbol.ResultType resultType = Symbol.ResultType.Void;
+        if (syntax.contains(CumulativeExpression)) {
+            handleAll(syntax, CumulativeExpression);
+            resultType = syntax.getSyntaxAt(CumulativeExpression).getResultType();
+        }
         syntaxAssert(symbol.result.equals(resultType), "Return statement of type " + resultType + " but expected " + symbol.result);
     }
 
-    protected static boolean handleExtension(SyntaxElement syntax) {
-        Symbol.ResultType parentType = getValueType(syntax.ancestor(CumulativeExpression).getSyntaxAt(Expression, Value));
-        Symbol.ResultType type = getValueType(syntax.getSyntaxAt(Expression, Value));
-        if (parentType.equals(Symbol.ResultType.None) || parentType.equals(Symbol.ResultType.Void)) return false;
-        return parentType.equals(type);
+    protected static void handleCumulativeExpression(SyntaxElement syntax) {
+        Symbol.ResultType type = getValueType(syntax.recurse(Expression).getSyntaxAt(Value));
+        syntax.setResultType(type);
+        handleAll(syntax, Expression);
+    }
+
+    protected static void handleExtension(SyntaxElement syntax) {
+        Symbol.ResultType parentType = syntax.ancestor(CumulativeExpression).getResultType();
+        Symbol.ResultType type = getValueType(syntax.recurse(Expression).getSyntaxAt(Value));
+        syntax.setResultType(type);
+        handleAll(syntax, Expression);
+        syntaxAssert(parentType.equals(Symbol.ResultType.None) || parentType.equals(Symbol.ResultType.Void), "Cannot use Void/None return type in Cumulative Expression");
+        syntaxAssert(parentType.equals(type), "Cumulative Expression expects all to be type " + parentType.name() + " but this Extension was " + type.name());
     }
 
     private static Symbol.ResultType getValueType(SyntaxElement value) {
@@ -110,10 +121,12 @@ public class Verify {
 
     protected static void handleMethodCall(SyntaxElement syntax) {
         String name = syntax.getAt(Name);
-        Symbol method = SymbolTable.find(name);
-        syntaxAssert(method != null, "Method " + name + " does not exist");
-        if (method == null) return;
-
+        SymbolTable table = SymbolTable.findScope(name);
+        syntaxAssert(table != null, "Method " + name + " does not exist");
+        if (table == null) return;
+        handleAll(syntax, CumulativeExpression);
+        List<SyntaxElement> arguments = syntax.childrenFilter(CumulativeExpression);
+        syntaxAssert(arguments.size() == table.getSymbols().size(), "Expected " + table.getSymbols().size() + " arguments but got " + arguments.size());
     }
 
     protected static void handleFile(SyntaxElement syntax) {

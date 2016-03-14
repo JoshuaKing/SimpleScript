@@ -20,6 +20,10 @@ public class SymbolTable {
         this.name = name;
     }
 
+    public Map<String, Symbol> getSymbols() {
+        return symbols;
+    }
+
     public static SymbolTable getInstance() {
         return instance;
     }
@@ -45,6 +49,29 @@ public class SymbolTable {
 
     public static SymbolTable exitScope() {
         return instance = instance.parentScope;
+    }
+
+    public static SymbolTable findScope(String name) {
+        // Bottom Up with no path
+        if (!name.contains(".")) {
+            SymbolTable search = instance;
+            while (search != null) {
+                SymbolTable table = search.scopes.get(name);
+                if (table != null) return table;
+                search = search.parentScope;
+            }
+            return null;
+        }
+
+        // Top Down w/Path
+        SymbolTable search = root;
+        String[] parts = name.split("\\.");
+        for (int i = 0; i < parts.length; i++) {
+            String part = parts[i];
+            search = search.scopes.get(part);
+            if (search == null) return null;
+        }
+        return search;
     }
 
     public static Symbol find(String name) {
@@ -82,7 +109,7 @@ public class SymbolTable {
         }
         dump += "Scopes:\n";
         for (String scope : scopes.keySet()) {
-            dump += indent(scope + " :\n" + indent(scopes.get(scope).toString()));
+            dump += indent("- " + scope + "\n" + indent(scopes.get(scope).toString()));
         }
         return dump + "\n";
     }
