@@ -34,38 +34,20 @@ public class Verify {
     }
 
     protected static void handleVariableAssignment(SyntaxElement syntax) {
-        String name = syntax.getAt(Name);
+        String name = syntax.getAt(VariableDeclaration, Name);
         Symbol variableSymbol = SymbolTable.find(name);
-        if (checkValueType(syntax, variableSymbol)) return;
         handleAll(syntax, Expression);
+        String error = "Cannot instantiate variable " + name + " of type " + variableSymbol.result.name() + " to type " + syntax.getSyntaxAt(Expression).getResultType();
+        syntaxAssert(syntax.getSyntaxAt(Expression).getResultType().equals(variableSymbol.result), syntax, error);
     }
 
     protected static void handleVariableInstantiation(SyntaxElement syntax) {
         handleAll(syntax, VariableDeclaration);
         String name = syntax.getAt(VariableDeclaration, Name);
         Symbol variableSymbol = SymbolTable.find(name);
-        if (checkValueType(syntax, variableSymbol)) return;
         handleAll(syntax, Expression);
-    }
-
-    private static boolean checkValueType(SyntaxElement syntax, Symbol symbol) {
-        if (syntax.getAt(Value, Constant) != null) {
-            String error = "Error instantiating " + symbol.result + " " + symbol.name + " to " + syntax.getSyntaxAt(Value, Constant);
-            syntaxAssert(isConstantType(symbol.result, syntax.getSyntaxAt(Value, Constant)), syntax, error);
-        } else if (syntax.getAt(Value, Variable) != null) {
-            String variableName = syntax.getAt(Value, Variable, Name);
-            Symbol variable = SymbolTable.find(variableName);
-            syntaxAssert(variable != null, syntax, "Error assigning variable " + symbol.name + " to non-existent variable " + variableName);
-            if (variable == null) return true;
-            syntaxAssert(symbol != variable, syntax, "Invalid self-reference (" + variableName + ") in variable instantiation.");
-            String error = "Error instantiating " + symbol.result + " " + symbol.name + " to " + variable.name + " of type " + variable.result;
-            syntaxAssert(symbol.result.equals(variable.result), syntax, error);
-        } else if (syntax.getAt(Value, MethodCall) != null) {
-            Symbol method = SymbolTable.find(syntax.getAt(Value, MethodCall, Name));
-            String error = "Error instantiating " + symbol.result + " " + symbol.name + " to method " + method.name + " return type " + method.result;
-            syntaxAssert(symbol.result.equals(method.result), syntax, error);
-        }
-        return false;
+        String error = "Cannot instantiate variable " + name + " of type " + variableSymbol.result.name() + " to type " + syntax.getSyntaxAt(Expression).getResultType();
+        syntaxAssert(syntax.getSyntaxAt(Expression).getResultType().equals(variableSymbol.result), syntax, error);
     }
 
     protected static void handleVariableDeclaration(SyntaxElement syntax) {
