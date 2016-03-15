@@ -27,16 +27,27 @@ public class Verify {
         if (!result) {
             passed = false;
             Token token = errorElement.getToken();
-            System.err.println("Syntax Error [" + token.getLineNumber() + ":" + token.getColumnNumber() + "]:" + errorString);
+            System.err.println("Syntax Error [" + token.getLineNumber() + ":" + token.getColumnNumber() + "]: " + errorString);
         }
         return result;
+    }
+
+    protected static void handleVariableAssignment(SyntaxElement syntax) {
+        String name = syntax.getAt(Name);
+        Symbol variableSymbol = SymbolTable.find(name);
+        if (checkValueType(syntax, variableSymbol)) return;
+        handleAll(syntax, Expression);
     }
 
     protected static void handleVariableInstantiation(SyntaxElement syntax) {
         handleAll(syntax, VariableDeclaration);
         String name = syntax.getAt(VariableDeclaration, Name);
-        Symbol symbol = SymbolTable.find(name);
+        Symbol variableSymbol = SymbolTable.find(name);
+        if (checkValueType(syntax, variableSymbol)) return;
+        handleAll(syntax, Expression);
+    }
 
+    private static boolean checkValueType(SyntaxElement syntax, Symbol symbol) {
         if (syntax.getAt(Value, Constant) != null) {
             String error = "Error instantiating " + symbol.result + " " + symbol.name + " to " + syntax.getSyntaxAt(Value, Constant);
             syntaxAssert(isConstantType(symbol.result, syntax.getSyntaxAt(Value, Constant)), syntax, error);
@@ -44,7 +55,7 @@ public class Verify {
             String variableName = syntax.getAt(Value, Variable, Name);
             Symbol variable = SymbolTable.find(variableName);
             syntaxAssert(variable != null, syntax, "Error assigning variable " + symbol.name + " to non-existent variable " + variableName);
-            if (variable == null) return;
+            if (variable == null) return true;
             syntaxAssert(symbol != variable, syntax, "Invalid self-reference (" + variableName + ") in variable instantiation.");
             String error = "Error instantiating " + symbol.result + " " + symbol.name + " to " + variable.name + " of type " + variable.result;
             syntaxAssert(symbol.result.equals(variable.result), syntax, error);
@@ -53,8 +64,7 @@ public class Verify {
             String error = "Error instantiating " + symbol.result + " " + symbol.name + " to method " + method.name + " return type " + method.result;
             syntaxAssert(symbol.result.equals(method.result), syntax, error);
         }
-
-        handleAll(syntax, Value);
+        return false;
     }
 
     protected static void handleVariableDeclaration(SyntaxElement syntax) {

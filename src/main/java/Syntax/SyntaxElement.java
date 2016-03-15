@@ -57,7 +57,7 @@ public class SyntaxElement {
 
     @Override
     public String toString() {
-        String compressedRepresentation = (token == null ? "--" : token.getText() + " [" + this.value + "]");
+        String compressedRepresentation = (token == null ? "/" : token.getText() + " [" + this.value + "]");
 
         if (children.size() == 1) {
             compressedRepresentation += " " + children.get(0).toString();
@@ -156,8 +156,6 @@ public class SyntaxElement {
 
             if (parent != null && parent.resultType == null) {
                 parent.resultType = resultType;
-            } else if (parent != null && resultType != null) {
-                Verify.syntaxAssert(parent.resultType.equals(resultType), this, "Using two different types is not allowed here");
             }
         } catch (NoSuchMethodException e) {
             for (SyntaxElement el : children) {
@@ -190,6 +188,7 @@ public class SyntaxElement {
     public void assignRecursive(Symbol.ResultType type) {
         if (resultType != null) return;
         resultType = type;
+        if (parent == null) return;
         parent.assignRecursive(type);
     }
 

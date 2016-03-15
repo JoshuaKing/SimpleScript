@@ -24,7 +24,6 @@ public class Translate {
 
         SyntaxElement syntaxTree = SyntaxBuilder.generate(tokens);
         System.out.println(syntaxTree.toString());
-        System.out.println(Syntax.SymbolTable.dump());
         Verify.verify(syntaxTree, "test.ss");
         System.out.println(Syntax.SymbolTable.dump());
     }
