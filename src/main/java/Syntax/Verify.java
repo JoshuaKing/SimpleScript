@@ -3,6 +3,7 @@ package Syntax;
 import Syntax.SyntaxBuilder.Grammar;
 import classes.Token;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 
 import static Syntax.SyntaxBuilder.Grammar.*;
@@ -15,7 +16,7 @@ public class Verify {
     private static boolean passed = true;
 
     public static boolean verify(SyntaxElement tree, String filename) {
-        tree.verify();
+        verify(tree);
         return passed;
     }
 
@@ -164,9 +165,33 @@ public class Verify {
     private static void handleAll(SyntaxElement syntax, Grammar... grammars) {
         for (Grammar grammar : grammars) {
             List<SyntaxElement> elements = syntax.childrenFilter(grammar);
-            for (SyntaxElement element : elements) {
-                element.verify();
+            elements.forEach(Verify::verify);
+        }
+    }
+
+
+    private static void verify(SyntaxElement syntax) {
+        try {
+            if (syntax.isLeaf) {
+                System.out.println("verified leaf " + syntax.value);
+            } else {
+                java.lang.reflect.Method method = Verify.class.getDeclaredMethod("handle" + syntax.value, SyntaxElement.class);
+                method.invoke(null, syntax);
             }
+
+            if (syntax.parent != null && syntax.parent.getResultType() == null) {
+                syntax.parent.setResultType(syntax.getResultType());
+            }
+        } catch (NoSuchMethodException e) {
+            syntax.children.forEach(Verify::verify);
+        } catch (InvocationTargetException e) {
+            try {
+                throw e.getCause();
+            } catch (Throwable throwable) {
+                throwable.printStackTrace();
+            }
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
         }
     }
 }

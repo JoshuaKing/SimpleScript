@@ -145,33 +145,6 @@ public class SyntaxElement {
         }
     }
 
-    public void verify() {
-        try {
-            if (isLeaf) {
-                System.out.println("verified leaf " + value);
-            } else {
-                java.lang.reflect.Method method = Verify.class.getDeclaredMethod("handle" + value, SyntaxElement.class);
-                method.invoke(null, this);
-            }
-
-            if (parent != null && parent.resultType == null) {
-                parent.resultType = resultType;
-            }
-        } catch (NoSuchMethodException e) {
-            for (SyntaxElement el : children) {
-                el.verify();
-            }
-        } catch (InvocationTargetException e) {
-            try {
-                throw e.getCause();
-            } catch (Throwable throwable) {
-                throwable.printStackTrace();
-            }
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        }
-    }
-
     public SyntaxElement ancestor(Grammar grammar) {
         if (grammar.equals(getGrammar())) return this;
         if (parent == null) return null;
