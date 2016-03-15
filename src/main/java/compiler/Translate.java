@@ -22,7 +22,7 @@ public class Translate {
         }
         System.out.println(reformatted.toString());
 
-        SyntaxElement syntaxTree = SyntaxBuilder.build(tokens);
+        SyntaxElement syntaxTree = SyntaxBuilder.generate(tokens);
         System.out.println(syntaxTree.toString());
         System.out.println(Syntax.SymbolTable.dump());
         Verify.verify(syntaxTree, "test.ss");

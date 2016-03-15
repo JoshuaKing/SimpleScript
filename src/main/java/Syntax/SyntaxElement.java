@@ -1,6 +1,7 @@
 package Syntax;
 
 import Syntax.SyntaxBuilder.Grammar;
+import classes.Token;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -11,6 +12,7 @@ import java.util.stream.Collectors;
  * Created by Josh on 7/03/2016.
  */
 public class SyntaxElement {
+    private final Token token;
     boolean isLeaf = false;
     int index = 0;
     String value;
@@ -19,10 +21,11 @@ public class SyntaxElement {
     List<SyntaxElement> children = new ArrayList<>();
     private Symbol.ResultType resultType;
 
-    public SyntaxElement(SyntaxElement parent, Grammar grammar, String value, boolean leaf) {
+    public SyntaxElement(SyntaxElement parent, Grammar grammar, String value, Token token, boolean leaf) {
         this.parent = parent;
         this.value = value;
         this.grammar = grammar;
+        this.token = token;
         isLeaf = leaf;
     }
 
@@ -54,12 +57,17 @@ public class SyntaxElement {
 
     @Override
     public String toString() {
-        String traversal = this.value + " [" + this.grammar + ":" + (parent != null ? parent.getValue() : "") + "] {\n";
-        for (SyntaxElement el : children) {
-            if (el.isLeaf) traversal += indent("'" + el.value + "'");
-            else traversal += indent(el.toString());
+        String compressedRepresentation = (token == null ? "--" : token.getText() + " [" + this.value + "]");
+
+        if (children.size() == 1) {
+            compressedRepresentation += " " + children.get(0).toString();
+        } else if (children.size() > 1) {
+            compressedRepresentation += ":\n";
+            for (SyntaxElement el : children) {
+                compressedRepresentation += indent(el.toString());
+            }
         }
-        return traversal + "}\n";
+        return compressedRepresentation;
     }
 
     private String indent(String text) {
@@ -145,6 +153,12 @@ public class SyntaxElement {
                 java.lang.reflect.Method method = Verify.class.getDeclaredMethod("handle" + value, SyntaxElement.class);
                 method.invoke(null, this);
             }
+
+            if (parent != null && parent.resultType == null) {
+                parent.resultType = resultType;
+            } else if (parent != null && resultType != null) {
+                Verify.syntaxAssert(parent.resultType.equals(resultType), this, "Using two different types is not allowed here");
+            }
         } catch (NoSuchMethodException e) {
             for (SyntaxElement el : children) {
                 el.verify();
@@ -173,11 +187,10 @@ public class SyntaxElement {
         return false;
     }
 
-    public SyntaxElement recurse(Grammar grammar) {
-        for (SyntaxElement child : children) {
-            if (grammar.equals(child.getGrammar())) return child.recurse(grammar);
-        }
-        return this;
+    public void assignRecursive(Symbol.ResultType type) {
+        if (resultType != null) return;
+        resultType = type;
+        parent.assignRecursive(type);
     }
 
     public Symbol.ResultType getResultType() {
@@ -186,5 +199,9 @@ public class SyntaxElement {
 
     public void setResultType(Symbol.ResultType resultType) {
         this.resultType = resultType;
+    }
+
+    public Token getToken() {
+        return token;
     }
 }

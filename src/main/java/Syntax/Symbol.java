@@ -8,7 +8,8 @@ public class Symbol {
         Public("public"),
         Protected(null),
         Private("private"),
-        Unaddressable(null);
+        Unaddressable(null),
+        None(null);
 
         private String value;
 
@@ -72,7 +73,7 @@ public class Symbol {
     private final String id = "SYMBOL-" + count++;
     public String name;
     public SymbolType symbol = SymbolType.Variable;
-    public AccessType access = AccessType.Protected;
+    public AccessType access = AccessType.None;
     public ResultType result = ResultType.None;
 
     public Symbol() { }

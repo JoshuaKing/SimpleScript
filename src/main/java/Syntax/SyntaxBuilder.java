@@ -14,13 +14,12 @@ import java.util.regex.Pattern;
  */
 public class SyntaxBuilder {
     public enum Grammar {
-        Keyword("if|while|int|float|boolean|string|map|list", true),
         Name("[a-zA-Z][a-zA-Z0-9.]*", true),
         String("\".*?\"|\'.*?\'", true),
         Float("\\d+[.]\\d+", true),
         Integer("\\d+", true),
         Boolean("true|false", true),
-        Anything(".*", true),
+        Anything(".*", true),       // Unusued, except for debugging
         File("Package Import* ClassDefinition"),
         Package("'package' Name ';'"),
         Import("'import' Name ';'"),
@@ -29,26 +28,27 @@ public class SyntaxBuilder {
         Field("Access? VariableInstantiation ';'"),
         Method("Access? ReturnType Name '(' {VariableDeclaration}* ')' '{' Statement* '}'"),
         ReturnType("VariableType | 'void'"),
-        VariableType("'int' | 'float' | 'string' | 'map' | 'list' | 'boolean'"),
-        VariableInstantiation("VariableDeclaration <'=',Value>?"),
+        VariableType("'int' | 'float' | 'string' | 'map' | 'list' | 'enum' | 'boolean'"),
+        VariableInstantiation("VariableDeclaration <'=' Expression>?"),
+        VariableAssignment("Name AssignmentOperator Value"),
         VariableDeclaration("VariableType Name"),
-        Expression("'(' Expression ')' | '!'? Value SoloOperator?"),
-        CumulativeExpression("Expression Extension*"),
-        Extension("[Comparator,BinaryOperator,BooleanOperator] Expression"),
+        Expression("BooleanExpression"),
+        BooleanExpression("EqualityExpression <['||','&&'] EqualityExpression>*"),
+        EqualityExpression("InequalityExpression <['==','!='] InequalityExpression>*"),
+        InequalityExpression("SumExpression <['<','>'] SumExpression>*"),
+        SumExpression("MultipleExpression <['+','-'] MultipleExpression>*"),
+        MultipleExpression("PowerExpression <['*','/','%'] PowerExpression>*"),
+        PowerExpression("IncrementExpression <'**' IncrementExpression>*"),
+        IncrementExpression("PrimaryExpression <['++','--'] PrimaryExpression>*"),
+        PrimaryExpression("Value | '(' PrimaryExpression ') | '-' PrimaryExpression"),
         Value("Constant | MethodCall | Variable"),
         Constant("String | Float | Integer | Boolean"),
         Variable("Name"),
-        SoloOperator("'++' | '--'"),
-        BooleanOperator("'&&' | '||'"),
-        BinaryOperator("'+' | '-' | '*' | '/' | '**'"),
-        UnaryOperator("'&' | '|' | '^' | '~'"),     // Unused
-        Comparator("'==' | '!=' | '<' | '>'"),
-        MethodCall("Name '(' {CumulativeExpression}* ')'"),
-        Statement("WhileStatement | IfStatement | ReturnStatement | VariableInstantiation ';' | CumulativeExpression ';'"),
-        ReturnStatement("'return' CumulativeExpression? ';'"),
-        WhileStatement("'while' '(' CumulativeExpression ')' '{' Statement+ '}'"),
-        IfStatement("'if' '(' CumulativeExpression ')' '{' Statement+ '}'"),
-        ListSeparator("','");
+        MethodCall("Name '(' {Expression}* ')'"),
+        Statement("WhileStatement | IfStatement | ReturnStatement | VariableInstantiation ';' | Expression ';'"),
+        ReturnStatement("'return' Expression? ';'"),
+        WhileStatement("'while' '(' Expression ')' '{' Statement+ '}'"),
+        IfStatement("'if' '(' Expression ')' '{' Statement+ '}'");
 
         private final boolean isRegex;
         String grammar;
@@ -70,6 +70,8 @@ public class SyntaxBuilder {
         }
     }
 
+    private static final String GRAMMAR_SEPARATOR = ",";
+
     private static List<Token> shortestError = null;
     private static List<String> expected = new ArrayList<>();
 
@@ -78,7 +80,10 @@ public class SyntaxBuilder {
     }
 
     private static String[] splitIntoParts(String grammar) {
-        return grammar.trim().split(" ");
+        List<String> list = new ArrayList<>();
+        Matcher m = Pattern.compile("([^<>]\\S*|<.*>\\S*)\\s*").matcher(grammar.trim());
+        while (m.find()) list.add(m.group(1));
+        return list.toArray(new String[0]);
     }
 
     private static List<Token> match(String grammar, List<Token> tokens, SyntaxElement syntaxElement) {
@@ -102,7 +107,7 @@ public class SyntaxBuilder {
         int i = 0;
         for (; i < max; i++) {
             List<Token> tokensCopy = tokens.subList(0, tokens.size());
-            tokensCopy = matchAny(grammar, tokensCopy, syntaxElement);
+            tokensCopy = matchAll(grammar, tokensCopy, syntaxElement);
             if (tokensCopy == null) {
                 if (i >= min) {
                     return tokens;
@@ -116,31 +121,31 @@ public class SyntaxBuilder {
         return tokens;
     }
 
-    private static List<Token> matchAny(String grammar, List<Token> tokens, SyntaxElement syntaxElement) {
-        if (grammar.matches("^\\[.*?\\]$")) {
-            grammar = trimCharacter(grammar);
-        } else {
-            return matchAll(grammar, tokens, syntaxElement);
-        }
-        String[] grammars = grammar.split(",");
-        for (String g : grammars) {
-            List<Token> tokensCopy = matchAll(g, tokens, syntaxElement);
-            if (tokensCopy != null) return tokensCopy;
-        }
-        return null;
-    }
-
     private static List<Token> matchAll(String grammar, List<Token> tokens, SyntaxElement syntaxElement) {
         if (grammar.matches("^<.*?>$")) {
             grammar = trimCharacter(grammar);
-            for (String g : grammar.split(",")) {
-                tokens = matchOne(g, tokens, syntaxElement);
+            for (String g : splitIntoParts(grammar)) {
+                tokens = matchAny(g, tokens, syntaxElement);
                 if (tokens == null) return null;
             }
             return tokens;
         } else {
+            return matchAny(grammar, tokens, syntaxElement);
+        }
+    }
+
+    private static List<Token> matchAny(String grammar, List<Token> tokens, SyntaxElement syntaxElement) {
+        if (grammar.matches("^\\[.*?\\]$")) {
+            grammar = trimCharacter(grammar);
+        } else {
             return matchRepeating(grammar, tokens, syntaxElement);
         }
+        String[] grammars = grammar.split(GRAMMAR_SEPARATOR);
+        for (String g : grammars) {
+            List<Token> tokensCopy = matchRepeating(g, tokens, syntaxElement);
+            if (tokensCopy != null) return tokensCopy;
+        }
+        return null;
     }
 
     private static List<Token> matchRepeating(String grammar, List<Token> tokens, SyntaxElement syntaxElement) {
@@ -149,10 +154,10 @@ public class SyntaxBuilder {
             tokens = matchOne(grammar, tokens, syntaxElement);
             if (tokens == null) return null;
             List<Token> tokensCopy;
-            if ((tokensCopy = matchOne(Grammar.ListSeparator.grammar, tokens, syntaxElement)) == null) {
+            if ((tokensCopy = matchOne("'" + GRAMMAR_SEPARATOR + "'", tokens, syntaxElement)) == null) {
                 return tokens;
             }
-            for (String g : grammar.split(",")) {
+            for (String g : grammar.split(GRAMMAR_SEPARATOR)) {
                 tokensCopy =  matchNodeGrammar(Grammar.of(g), tokensCopy, syntaxElement);
                 if (tokensCopy == null) return null;
             }
@@ -166,8 +171,8 @@ public class SyntaxBuilder {
         String noQuotes = trimCharacter(grammar);
 
         if (grammar.matches("^'.*'$") && tokens.get(0).getText().equals(noQuotes)) {
-            syntaxElement.addNode(new SyntaxElement(syntaxElement, null, noQuotes, true));
-            System.out.println("Added Node " + noQuotes + " to parent = " + syntaxElement.getValue());
+            syntaxElement.addNode(new SyntaxElement(syntaxElement, null, noQuotes, tokens.get(0), true));
+            System.out.println("Added Node " + noQuotes + " to parent " + syntaxElement.getValue());
             return shift(tokens);
         } else if (grammar.matches("^'.*'$")) {
             if (shortestError.size() > tokens.size()) {
@@ -192,8 +197,8 @@ public class SyntaxBuilder {
         if (grammar == null) return null;
         Matcher m = Pattern.compile("^" + grammar.grammar + "$").matcher(tokens.get(0).getText());
         if (m.find()) {
-            System.out.println("Added Leaf " + m.group() + " to parent = " + syntaxElement.getValue());
-            syntaxElement.addNode(new SyntaxElement(syntaxElement, grammar, m.group(), true));
+            System.out.println("Added Leaf " + m.group() + " to parent " + syntaxElement.getValue());
+            syntaxElement.addNode(new SyntaxElement(syntaxElement, grammar, m.group(), tokens.get(0), true));
             return shift(tokens);
         }
 
@@ -215,7 +220,7 @@ public class SyntaxBuilder {
     private static List<Token> matchNodeGrammar(Grammar grammar, List<Token> tokens, SyntaxElement syntaxElement) {
         if (grammar == null) return null;
 
-        SyntaxElement el = new SyntaxElement(syntaxElement, grammar, grammar.name(), false);
+        SyntaxElement el = new SyntaxElement(syntaxElement, grammar, grammar.name(), tokens.get(0), false);
         if (grammar.isRegex) {
             List<Token> c = matchLeaf(grammar, tokens, el);
             if (c == null) return null;
@@ -253,8 +258,8 @@ public class SyntaxBuilder {
         return grammar;
     }
 
-    public static SyntaxElement build(List<Token> tokens) {
-        SyntaxElement root = new SyntaxElement(null, null, "ROOT", false);
+    public static SyntaxElement generate(List<Token> tokens) {
+        SyntaxElement root = new SyntaxElement(null, null, "ROOT", null, false);
         shortestError = tokens;
         if (null == matchNodeGrammar(Grammar.File, tokens, root)) {
             System.out.println(getTokenError().getText());
@@ -268,6 +273,6 @@ public class SyntaxBuilder {
     }
 
     public static String getError() {
-        return "Expected one of " + Arrays.toString(expected.toArray()) + " but was " + getTokenError().getText();
+        return getTokenError().getLineNumber() + ":" + getTokenError().getColumnNumber() + "  Expected one of " + Arrays.toString(expected.toArray()) + " but was " + getTokenError().getText();
     }
 }

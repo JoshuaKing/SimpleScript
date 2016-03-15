@@ -1,6 +1,7 @@
 package Syntax;
 
 import Syntax.SyntaxBuilder.Grammar;
+import classes.Token;
 
 import java.util.List;
 
@@ -22,11 +23,13 @@ public class Verify {
         return syntax.getAt(Grammar.of(type.name())) != null;
     }
 
-    public static void syntaxAssert(Boolean result, String error) {
+    public static boolean syntaxAssert(Boolean result, SyntaxElement errorElement, String errorString) {
         if (!result) {
             passed = false;
-            System.err.println("Syntax Error: " + error);
+            Token token = errorElement.getToken();
+            System.err.println("Syntax Error [" + token.getLineNumber() + ":" + token.getColumnNumber() + "]:" + errorString);
         }
+        return result;
     }
 
     protected static void handleVariableInstantiation(SyntaxElement syntax) {
@@ -36,20 +39,22 @@ public class Verify {
 
         if (syntax.getAt(Value, Constant) != null) {
             String error = "Error instantiating " + symbol.result + " " + symbol.name + " to " + syntax.getSyntaxAt(Value, Constant);
-            syntaxAssert(isConstantType(symbol.result, syntax.getSyntaxAt(Value, Constant)), error);
+            syntaxAssert(isConstantType(symbol.result, syntax.getSyntaxAt(Value, Constant)), syntax, error);
         } else if (syntax.getAt(Value, Variable) != null) {
             String variableName = syntax.getAt(Value, Variable, Name);
             Symbol variable = SymbolTable.find(variableName);
-            syntaxAssert(variable != null, "Error assigning variable " + symbol.name + " to non-existent variable " + variableName);
+            syntaxAssert(variable != null, syntax, "Error assigning variable " + symbol.name + " to non-existent variable " + variableName);
             if (variable == null) return;
-            syntaxAssert(symbol != variable, "Invalid self-reference (" + variableName + ") in variable instantiation.");
+            syntaxAssert(symbol != variable, syntax, "Invalid self-reference (" + variableName + ") in variable instantiation.");
             String error = "Error instantiating " + symbol.result + " " + symbol.name + " to " + variable.name + " of type " + variable.result;
-            syntaxAssert(symbol.result.equals(variable.result), error);
+            syntaxAssert(symbol.result.equals(variable.result), syntax, error);
         } else if (syntax.getAt(Value, MethodCall) != null) {
             Symbol method = SymbolTable.find(syntax.getAt(Value, MethodCall, Name));
             String error = "Error instantiating " + symbol.result + " " + symbol.name + " to method " + method.name + " return type " + method.result;
-            syntaxAssert(symbol.result.equals(method.result), error);
+            syntaxAssert(symbol.result.equals(method.result), syntax, error);
         }
+
+        handleAll(syntax, Value);
     }
 
     protected static void handleVariableDeclaration(SyntaxElement syntax) {
@@ -74,6 +79,7 @@ public class Verify {
         symbol.access = Symbol.AccessType.fromDeclaredType(syntax.getAt(Access));
         if (symbol.access == null) symbol.access = Symbol.AccessType.Public;
 
+        syntax.setResultType(symbol.result);
         SymbolTable.addToScope(symbol);
         SymbolTable.newScope(name);
         handleAll(syntax, VariableDeclaration);
@@ -86,47 +92,44 @@ public class Verify {
     protected static void handleReturnStatement(SyntaxElement syntax) {
         Symbol symbol = SymbolTable.find(syntax.ancestor(Method).getAt(Name));
         Symbol.ResultType resultType = Symbol.ResultType.Void;
-        if (syntax.contains(CumulativeExpression)) {
-            handleAll(syntax, CumulativeExpression);
-            resultType = syntax.getSyntaxAt(CumulativeExpression).getResultType();
+        if (syntax.contains(Expression)) {
+            handleAll(syntax, Expression);
+            resultType = syntax.getSyntaxAt(Expression).getResultType();
         }
-        syntaxAssert(symbol.result.equals(resultType), "Return statement of type " + resultType + " but expected " + symbol.result);
+        syntaxAssert(symbol.result.equals(resultType), syntax, "Return statement of type " + resultType + " but expected " + symbol.result);
     }
 
-    protected static void handleCumulativeExpression(SyntaxElement syntax) {
-        Symbol.ResultType type = getValueType(syntax.recurse(Expression).getSyntaxAt(Value));
-        syntax.setResultType(type);
-        handleAll(syntax, Expression);
+    protected static void handleConstant(SyntaxElement syntax) {
+        Symbol.ResultType resultType = Symbol.ResultType.fromGrammarName(syntax.getChild(0).getGrammar().name());
+        syntax.assignRecursive(resultType);
     }
 
-    protected static void handleExtension(SyntaxElement syntax) {
-        Symbol.ResultType parentType = syntax.ancestor(CumulativeExpression).getResultType();
-        Symbol.ResultType type = getValueType(syntax.recurse(Expression).getSyntaxAt(Value));
-        syntax.setResultType(type);
-        handleAll(syntax, Expression);
-        syntaxAssert(parentType.equals(Symbol.ResultType.None) || parentType.equals(Symbol.ResultType.Void), "Cannot use Void/None return type in Cumulative Expression");
-        syntaxAssert(parentType.equals(type), "Cumulative Expression expects all to be type " + parentType.name() + " but this Extension was " + type.name());
-    }
-
-    private static Symbol.ResultType getValueType(SyntaxElement value) {
-        if (value.contains(MethodCall)) {
-            return SymbolTable.find(value.getAt(MethodCall, Name)).result;
-        } else if (value.contains(Constant)) {
-            return Symbol.ResultType.fromGrammarName(value.getSyntaxAt(Constant).getChild(0).getGrammar().name());
-        } else if (value.contains(Variable)) {
-            return SymbolTable.find(value.getAt(Variable, Name)).result;
-        }
-        return Symbol.ResultType.None;
+    protected static void handleVariable(SyntaxElement syntax) {
+        Symbol.ResultType resultType = SymbolTable.find(syntax.getAt(Name)).result;
+        syntax.assignRecursive(resultType);
     }
 
     protected static void handleMethodCall(SyntaxElement syntax) {
         String name = syntax.getAt(Name);
+        Symbol method = SymbolTable.find(name);
         SymbolTable table = SymbolTable.findScope(name);
-        syntaxAssert(table != null, "Method " + name + " does not exist");
-        if (table == null) return;
-        handleAll(syntax, CumulativeExpression);
-        List<SyntaxElement> arguments = syntax.childrenFilter(CumulativeExpression);
-        syntaxAssert(arguments.size() == table.getSymbols().size(), "Expected " + table.getSymbols().size() + " arguments but got " + arguments.size());
+        syntaxAssert(table != null && method != null, syntax, "Method " + name + " does not exist");
+        if (table == null || method == null) return;
+        syntax.assignRecursive(method.result);
+        handleAll(syntax, Expression);
+
+        List<SyntaxElement> arguments = syntax.childrenFilter(Expression);
+        String error = "Expected " + table.getSymbols().size() + " arguments but got " + arguments.size();
+        if (!syntaxAssert(arguments.size() == table.getSymbols().size(), syntax, error)) {
+            return;
+        }
+
+        int i = 0;
+        for (Symbol s : table.getSymbols().values()) {
+            Symbol.ResultType resultType = arguments.get(i++).getResultType();
+            error = "Query parameter " + s.name + " is type " + s.result.name() + " but argument is type " + resultType.name();
+            syntaxAssert(s.result.equals(resultType), syntax, error);
+        }
     }
 
     protected static void handleFile(SyntaxElement syntax) {

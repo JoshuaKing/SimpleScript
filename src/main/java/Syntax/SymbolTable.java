@@ -1,6 +1,7 @@
 package Syntax;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -13,14 +14,14 @@ public class SymbolTable {
     private SymbolTable parentScope;
     private String name;
     private Map<String, SymbolTable> scopes = new HashMap<>();
-    private Map<String, Symbol> symbols = new HashMap<>();
+    private LinkedHashMap<String, Symbol> symbols = new LinkedHashMap<>();
 
     private SymbolTable(SymbolTable parent, String name) {
         parentScope = parent;
         this.name = name;
     }
 
-    public Map<String, Symbol> getSymbols() {
+    public LinkedHashMap<String, Symbol> getSymbols() {
         return symbols;
     }
 
