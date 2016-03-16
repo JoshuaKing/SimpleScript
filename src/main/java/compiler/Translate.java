@@ -1,10 +1,15 @@
 package compiler;
 
-import Syntax.*;
+import Syntax.SyntaxBuilder;
+import Syntax.SyntaxElement;
+import Syntax.ScriptVerifier;
 import classes.Token;
 import org.apache.commons.io.IOUtils;
+import output.OutputJava;
 
+import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.StringWriter;
 import java.util.List;
 
@@ -24,7 +29,16 @@ public class Translate {
 
         SyntaxElement syntaxTree = SyntaxBuilder.generate(tokens);
         System.out.println(syntaxTree.toString());
-        Verify.verify(syntaxTree, "test.ss");
+        ScriptVerifier.verify(syntaxTree, "test.ss");
         System.out.println(Syntax.SymbolTable.dump());
+
+        OutputJava javaCode = OutputJava.generate(syntaxTree);
+        File output = new File("files/" + javaCode.getFilepath() + "/" + javaCode.getFilename() + ".java");
+        output.getParentFile().mkdirs();
+        FileWriter fileWriter = new FileWriter(output);
+        fileWriter.write(javaCode.getCode());
+        fileWriter.close();
+
+        System.out.println(javaCode.getCode());
     }
 }

@@ -6,9 +6,9 @@ class MyClass {
     private int y = a;
     // Test Comment 2
 
-    void x(int b, boolean c) {
+    int x(int b, boolean c) {
         int d = x(y, 3 + 4);
-        x(1 + x.y.z.MyClass.a);
+        x(1 + a);
         if (a ==b || 2 ** 3 && c) {
             return a < 20.2;
         }
