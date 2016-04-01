@@ -4,7 +4,6 @@ import Syntax.Symbol.ResultType;
 import Syntax.SyntaxBuilder.Grammar;
 import classes.Token;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 
 import static Syntax.SyntaxBuilder.Grammar.*;
@@ -15,27 +14,18 @@ import static Syntax.SyntaxBuilder.Grammar.Package;
  */
 public class ScriptVerifier {
     private final SyntaxElement syntax;
-    private final String filename;
     private boolean passed = true;
 
-    public ScriptVerifier(SyntaxElement tree, String filename) {
+    public ScriptVerifier(SyntaxElement tree) {
         this.syntax = tree;
-        this.filename = filename;
     }
 
-    public static boolean verify(SyntaxElement tree, String filename) {
-        ScriptVerifier verifier = new ScriptVerifier(tree, filename);
-        verifier.verify();
-        return verifier.passed;
+    public boolean verifyTree() {
+        handleGeneric();
+        return passed;
     }
 
-    public static boolean verify(SyntaxElement tree) {
-        ScriptVerifier verifier = new ScriptVerifier(tree, null);
-        verifier.verify();
-        return verifier.passed;
-    }
-
-    public boolean syntaxAssert(Boolean result, String errorString) {
+    private boolean syntaxAssert(Boolean result, String errorString) {
         if (!result) {
             passed = false;
             Token token = syntax.getToken();
@@ -47,16 +37,16 @@ public class ScriptVerifier {
     protected void handleVariableAssignment() {
         String name = syntax.getAt(VariableDeclaration, Name);
         Symbol variableSymbol = SymbolTable.find(name);
-        handleAll(Expression);
+        handleChildrenOf(Expression);
         String error = "Cannot instantiate variable " + name + " of type " + variableSymbol.result.name() + " to type " + syntax.getSyntaxAt(Expression).getResultType();
         syntaxAssert(syntax.getSyntaxAt(Expression).getResultType().equals(variableSymbol.result), error);
     }
 
     protected void handleVariableInstantiation() {
-        handleAll(VariableDeclaration);
+        handleChildrenOf(VariableDeclaration);
         String name = syntax.getAt(VariableDeclaration, Name);
         Symbol variableSymbol = SymbolTable.find(name);
-        handleAll(Expression);
+        handleChildrenOf(Expression);
         String error = "Cannot instantiate variable " + name + " of type " + variableSymbol.result.name() + " to type " + syntax.getSyntaxAt(Expression).getResultType();
         syntaxAssert(syntax.getSyntaxAt(Expression).getResultType().equals(variableSymbol.result), error);
     }
@@ -68,7 +58,7 @@ public class ScriptVerifier {
     }
 
     protected void handleField() {
-        handleAll(VariableInstantiation);
+        handleChildrenOf(VariableInstantiation);
         Symbol symbol = SymbolTable.find(syntax.getAt(VariableInstantiation, VariableDeclaration, Name));
         symbol.access = Symbol.AccessType.fromDeclaredType(syntax.getAt(Access));
         if (symbol.access == null) symbol.access = Symbol.AccessType.Private;
@@ -86,10 +76,10 @@ public class ScriptVerifier {
         syntax.setResultType(symbol.result);
         SymbolTable.addToScope(symbol);
         SymbolTable.newScope(name);
-        handleAll(VariableDeclaration);
+        handleChildrenOf(VariableDeclaration);
         Symbol methodScope = Symbol.newScopeSymbol("Method-" + name);
         SymbolTable.newScope(methodScope.name);
-        handleAll(Statement);
+        handleChildrenOf(Statement);
         SymbolTable.exitScope();
     }
 
@@ -97,7 +87,7 @@ public class ScriptVerifier {
         Symbol symbol = SymbolTable.find(syntax.ancestor(Method).getAt(Name));
         ResultType resultType = ResultType.Void;
         if (syntax.contains(Expression)) {
-            handleAll(Expression);
+            handleChildrenOf(Expression);
             resultType = syntax.getSyntaxAt(Expression).getResultType();
         }
         syntaxAssert(symbol.result.equals(resultType), "Return statement of type " + resultType + " but expected " + symbol.result);
@@ -105,12 +95,12 @@ public class ScriptVerifier {
 
     protected void handleConstant() {
         ResultType resultType = ResultType.fromGrammarName(syntax.getChild(0).getGrammar().name());
-        syntax.assignRecursive(resultType);
+        syntax.assignUpRecursive(resultType);
     }
 
     protected void handleVariable() {
         ResultType resultType = SymbolTable.find(syntax.getAt(Name)).result;
-        syntax.assignRecursive(resultType);
+        syntax.assignUpRecursive(resultType);
     }
 
     protected void handleMethodCall() {
@@ -119,8 +109,8 @@ public class ScriptVerifier {
         SymbolTable table = SymbolTable.findScope(name);
         syntaxAssert(table != null && method != null, "Method " + name + " does not exist");
         if (table == null || method == null) return;
-        syntax.assignRecursive(method.result);
-        handleAll(Expression);
+        syntax.assignUpRecursive(method.result);
+        handleChildrenOf(Expression);
 
         List<SyntaxElement> arguments = syntax.childrenFilter(Expression);
         String error = "Expected " + table.getSymbols().size() + " arguments but got " + arguments.size();
@@ -138,8 +128,8 @@ public class ScriptVerifier {
 
     protected void handleFile() {
         SymbolTable.newScope(syntax.getAt(Package, Name));
-        handleAll(Import);
-        handleAll(ClassDefinition);
+        handleChildrenOf(Import);
+        handleChildrenOf(ClassDefinition);
         SymbolTable.exitScope();
     }
 
@@ -151,47 +141,39 @@ public class ScriptVerifier {
 
         SymbolTable.addToScope(symbol);
         SymbolTable.newScope(syntax.getAt(Name));
-        handleAll(Field, Method);
+        handleChildrenOf(Field, Method);
         SymbolTable.exitScope();
     }
 
     protected void handlePowerExpression() {
-        handleAll(IncrementExpression);
+        handleChildrenOf(IncrementExpression);
         if (syntax.children.size() == 1) return;
         for (SyntaxElement expression : syntax.childrenFilter(IncrementExpression)) {
             ResultType type = expression.getResultType();
+            if (syntax.getResultType() == null) syntax.setResultType(type);
             syntaxAssert(type.equals(ResultType.Integer) || type.equals(ResultType.Float), "Can only raise Integers and Floats to a power");
         }
     }
 
-    private void handleAll(Grammar... grammars) {
+    private void handleChildrenOf(Grammar... grammars) {
         for (Grammar grammar : grammars) {
             List<SyntaxElement> elements = syntax.childrenFilter(grammar);
-            elements.forEach(ScriptVerifier::verify);
+            elements.forEach(el -> grammar.getVerifier().verify(new ScriptVerifier(el)));
         }
     }
 
 
-    private void verify() {
-        try {
-            if (!syntax.isLeaf) {
-                java.lang.reflect.Method method = ScriptVerifier.class.getDeclaredMethod("handle" + syntax.value, SyntaxElement.class);
-                method.invoke(null, syntax);
-            }
+    protected void handleGeneric() {
+        if (!syntax.isLeaf()) {
+            syntax.children.forEach(el -> {
+                if (el != null && el.getGrammar() != null) {
+                    el.getGrammar().getVerifier().verify(new ScriptVerifier(el));
+                }
+            });
+        }
 
-            if (syntax.parent != null && syntax.parent.getResultType() == null) {
-                syntax.parent.setResultType(syntax.getResultType());
-            }
-        } catch (NoSuchMethodException e) {
-            syntax.children.forEach(ScriptVerifier::verify);
-        } catch (InvocationTargetException e) {
-            try {
-                throw e.getCause();
-            } catch (Throwable throwable) {
-                throwable.printStackTrace();
-            }
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
+        if (syntax.getParent() != null && syntax.getParent().getResultType() == null) {
+            syntax.getParent().setResultType(syntax.getResultType());
         }
     }
 }

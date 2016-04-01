@@ -20,46 +20,56 @@ public class SyntaxBuilder {
         Integer("\\d+", true),
         Boolean("true|false", true),
         Anything(".*", true),       // Unusued, except for debugging
-        File("Package Import* ClassDefinition"),
+        File("Package Import* ClassDefinition", ScriptVerifier::handleFile),
         Package("'package' Name ';'"),
         Import("'import' Name ';'"),
-        ClassDefinition("'class' Name '{' [Field,Method]+ '}'"),
+        ClassDefinition("'class' Name '{' [Field,Method]+ '}'", ScriptVerifier::handleClassDefinition),
         Access("'public' | 'private'"),
-        Field("Access? VariableInstantiation ';'"),
-        Method("Access? ReturnType Name '(' {VariableDeclaration}* ')' '{' Statement* '}'"),
-        ReturnType("VariableType | 'void'"),
+        Field("Access? VariableInstantiation ';'", ScriptVerifier::handleField),
+        Method("Access? ReturnType Name '(' {VariableDeclaration}* ')' '{' Statement* '}'", ScriptVerifier::handleMethod),
+        ReturnType("'int' | 'float' | 'string' | 'map' | 'list' | 'enum' | 'boolean' | 'void'"),
         VariableType("'int' | 'float' | 'string' | 'map' | 'list' | 'enum' | 'boolean'"),
-        VariableInstantiation("VariableDeclaration <'=' Expression>?"),
-        VariableAssignment("Name AssignmentOperator Expression"),
-        VariableDeclaration("VariableType Name"),
+        VariableInstantiation("VariableDeclaration <'=' Expression>?", ScriptVerifier::handleVariableInstantiation),
+        VariableAssignment("Name AssignmentOperator Expression", ScriptVerifier::handleVariableAssignment),
+        VariableDeclaration("VariableType Name", ScriptVerifier::handleVariableDeclaration),
         Expression("BooleanExpression"),
         BooleanExpression("EqualityExpression <['||','&&'] EqualityExpression>*"),
         EqualityExpression("ComparisonExpression <['==','!='] ComparisonExpression>*"),
-        ComparisonExpression("SumExpression <['<','>'] SumExpression>*"),
+        ComparisonExpression("SumExpression <['<','>','<=','>='] SumExpression>*"),
         SumExpression("MultipleExpression <['+','-'] MultipleExpression>*"),
         MultipleExpression("PowerExpression <['*','/','%'] PowerExpression>*"),
-        PowerExpression("IncrementExpression <'**' IncrementExpression>*"),
+        PowerExpression("IncrementExpression <'**' IncrementExpression>*", ScriptVerifier::handlePowerExpression),
         IncrementExpression("PrimaryExpression <['++','--'] PrimaryExpression>*"),
         PrimaryExpression("Value | VariableAssignment | '(' PrimaryExpression ') | '-' PrimaryExpression"),
         Value("Constant | MethodCall | Variable"),
-        Constant("String | Float | Integer | Boolean"),
-        Variable("Name"),
-        MethodCall("Name '(' {Expression}* ')'"),
+        Constant("String | Float | Integer | Boolean", ScriptVerifier::handleConstant),
+        Variable("Name", ScriptVerifier::handleVariable),
+        MethodCall("Name '(' {Expression}* ')'", ScriptVerifier::handleMethodCall),
         Statement("WhileStatement | IfStatement | ReturnStatement | VariableInstantiation ';' | Expression ';'"),
-        ReturnStatement("'return' Expression? ';'"),
+        ReturnStatement("'return' Expression? ';'", ScriptVerifier::handleReturnStatement),
         WhileStatement("'while' '(' Expression ')' '{' Statement+ '}'"),
         IfStatement("'if' '(' Expression ')' '{' Statement+ '}'");
 
         private final boolean isRegex;
         String grammar;
+        SyntaxVerifier verifier;
 
         Grammar(String grammar) {
-            this(grammar, false);
+            this(grammar, ScriptVerifier::handleGeneric);
+        }
+
+        Grammar(String grammar, SyntaxVerifier verifier) {
+            this(grammar, false, verifier);
         }
 
         Grammar(String grammar, boolean isRegex) {
+            this(grammar, isRegex, ScriptVerifier::handleGeneric);
+        }
+
+        Grammar(String grammar, boolean isRegex, SyntaxVerifier verifier) {
             this.isRegex = isRegex;
             this.grammar = grammar;
+            this.verifier = verifier;
         }
 
         static Grammar of(String grammar) {
@@ -67,6 +77,10 @@ public class SyntaxBuilder {
                 if (g.name().equals(grammar)) return g;
             }
             return null;
+        }
+
+        public SyntaxVerifier getVerifier() {
+            return verifier;
         }
     }
 

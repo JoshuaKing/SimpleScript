@@ -1,5 +1,6 @@
 package output;
 
+import Syntax.Symbol;
 import Syntax.SyntaxBuilder;
 import Syntax.SyntaxElement;
 import classes.Token;
@@ -76,9 +77,9 @@ public class OutputJava extends OutputCode {
 
     @Override
     public String handlePackage() {
-        String packageName = "generated." + element.getAt(SyntaxBuilder.Grammar.Name);
+        String packageName = element.getAt(SyntaxBuilder.Grammar.Name);
         filepath = String.join("/", packageName.split("\\."));
-        return "package " + packageName + ";" + getLanguageImports();
+        return "package generated." + packageName + ";" + getLanguageImports();
     }
 
     @Override
@@ -88,24 +89,43 @@ public class OutputJava extends OutputCode {
     }
 
     private String getLanguageImports() {
-        return "import lang.SimpleInteger;";
+        return "import lang.objects.SimpleInteger;" +
+               "import lang.objects.SimpleFloat;";
     }
 
     @Override
     public String handlePowerExpression() {
         if (element.getChildren().size() == 1) return generate(element.getChild(0)).getCode();
-        return "java.lang.Math.pow(" + generate(element.getChild(0)).getCode() + ".getValue(), " + generate(element.getChild(2)).getCode() + ".getValue()) ";
+        return castToResultType(element.getResultType(), "java.lang.Math.pow(" + generate(element.getChild(0)).getCode() + ".asDouble(), " + generate(element.getChild(2)).getCode() + ".asDouble()) ");
+    }
+
+    private String castToResultType(Symbol.ResultType type, String codeToCast) {
+        if (Symbol.ResultType.Integer == type) {
+            return "SimpleInteger.valueOf(" + codeToCast + ")";
+        } else if (Symbol.ResultType.Float == type) {
+            return "SimpleFloat.valueOf(" + codeToCast + ")";
+        } else {
+            return codeToCast;
+        }
     }
 
     @Override
     public String handleComparisonExpression() {
         if (element.getChildren().size() == 1) return generate(element.getChild(0)).getCode();
-        return "lang.SimpleObject.on(\"" + generate(element.getChild(1)) + "\", " + generate(element.getChild(0)).getCode() + ", " + generate(element.getChild(2)).getCode() + ") ";
+        if (element.getChild(1).getToken().getType().equals(Token.Type.LessThan)) {
+            return generate(element.getChild(0)).getCode() + ".lesser(" + generate(element.getChild(2)).getCode() + ") ";
+        }
+        return generate(element.getChild(0)).getCode() + ".greater(" + generate(element.getChild(2)).getCode() + ") ";
     }
 
     @Override
     public String handleInteger() {
         return "(new SimpleInteger(" + element.getValue() + "))";
+    }
+
+    @Override
+    public String handleFloat() {
+        return "(new SimpleFloat(" + element.getValue() + "))";
     }
 
     @Override
@@ -136,7 +156,7 @@ public class OutputJava extends OutputCode {
     @Override
     public String handleVariableType() {
         if (element.getToken().getType().equals(Token.Type.KeywordInt)) {
-            return "SimpleInteger";
+            return "SimpleInteger ";
         }
         return handleDefault();
     }

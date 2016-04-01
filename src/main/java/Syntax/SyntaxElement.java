@@ -3,7 +3,6 @@ package Syntax;
 import Syntax.SyntaxBuilder.Grammar;
 import classes.Token;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -108,6 +107,11 @@ public class SyntaxElement {
         return children;
     }
 
+    /**
+     * Retrieve the nested child element located at this.child(a).child(b).child(c) etc
+     * @param path The (nested) location of an element to lookup
+     * @return the node located at path
+     */
     public SyntaxElement getSyntaxAt(Grammar... path) {
         SyntaxElement value = this;
         for (Grammar grammar : path) {
@@ -124,6 +128,11 @@ public class SyntaxElement {
         return value;
     }
 
+    /**
+     * Retrieve children elements which match any one of the given grammars
+     * @param grammars the grammars to look for in the children elements
+     * @return all child elements which match a supplied grammar
+     */
     public List<SyntaxElement> childrenFilter(Grammar... grammars) {
         List<SyntaxElement> syntaxList = new ArrayList<>();
         for (Grammar grammar : grammars) {
@@ -132,6 +141,11 @@ public class SyntaxElement {
         return syntaxList;
     }
 
+    /**
+     * Retrieve the value of a nested child element located at this.child(a).child(b).child(c) etc
+     * @param path The (nested) location of an element to lookup
+     * @return the value of the node located at path
+     */
     public String getAt(Grammar... path) {
         SyntaxElement value = getSyntaxAt(path);
         if (value == null) return null;
@@ -145,6 +159,11 @@ public class SyntaxElement {
         }
     }
 
+    /**
+     * Recurse up the element's parents until one matches grammar
+     * @param grammar The grammar to match
+     * @return The first parent with matching grammar, or null if not found
+     */
     public SyntaxElement ancestor(Grammar grammar) {
         if (grammar.equals(getGrammar())) return this;
         if (parent == null) return null;
@@ -158,11 +177,11 @@ public class SyntaxElement {
         return false;
     }
 
-    public void assignRecursive(Symbol.ResultType type) {
+    public void assignUpRecursive(Symbol.ResultType type) {
         if (resultType != null) return;
         resultType = type;
         if (parent == null) return;
-        parent.assignRecursive(type);
+        parent.assignUpRecursive(type);
     }
 
     public Symbol.ResultType getResultType() {

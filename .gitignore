@@ -1,4 +1,4 @@
 /.idea
 /target
-/files/generated/
+/src/main/java/generated
 /*.iml

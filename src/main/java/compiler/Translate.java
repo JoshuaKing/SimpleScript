@@ -29,11 +29,14 @@ public class Translate {
 
         SyntaxElement syntaxTree = SyntaxBuilder.generate(tokens);
         System.out.println(syntaxTree.toString());
-        ScriptVerifier.verify(syntaxTree, "test.ss");
+        boolean passed = new ScriptVerifier(syntaxTree).verifyTree();
+        if (!passed) {
+            System.out.println("File did not verify, continuing for debugging");
+        }
         System.out.println(Syntax.SymbolTable.dump());
 
         OutputJava javaCode = OutputJava.generate(syntaxTree);
-        File output = new File("files/" + javaCode.getFilepath() + "/" + javaCode.getFilename() + ".java");
+        File output = new File("src/main/java/generated/" + javaCode.getFilepath() + "/" + javaCode.getFilename() + ".java");
         output.getParentFile().mkdirs();
         FileWriter fileWriter = new FileWriter(output);
         fileWriter.write(javaCode.getCode());

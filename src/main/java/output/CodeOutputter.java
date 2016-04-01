@@ -17,6 +17,7 @@ public interface CodeOutputter {
     String handleComparisonExpression();
     String handlePowerExpression();
     String handleInteger();
+    String handleFloat();
     String handleVariableAssignment();
     String handleVariableInstantiation();
     String handleExpression();
